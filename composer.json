@@ -1,0 +1,42 @@
+{
+	"name": "psa/cakephp-elastic-index",
+	"type": "cakephp-plugin",
+	"description": "Plugin to index relational data in the elastic search index",
+	"keywords": ["search", "index", "elastic"],
+	"homepage": "http://world-architects.com",
+	"license": "Proprietary",
+	"authors": [
+		{
+			"name": "Florian Krämer",
+			"homepage": "http://world-architects.com"
+		},
+		{
+			"name": "Falk Romano",
+			"homepage": "http://world-architects.com"
+		}
+	],
+	"minimum-stability": "stable",
+	"require": {
+		"cakephp/cakephp": "^3.1",
+		"cakephp/elastic-search": "dev-master",
+		"cakephp/plugin-installer": "*"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "*"
+	},
+	"autoload": {
+		"psr-4": {
+			"Psa\\ElasticIndex\\": "src",
+			"Psa\\ElasticIndex\\Test\\Fixture\\": "tests\\Fixture"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Cake\\Test\\": "/vendor/cakephp/cakephp/tests",
+			"Psa\\ElasticIndex\\Test\\TestCase\\": "tests"
+		}
+	},
+	"scripts": {
+		"post-autoload-dump": "Cake\\Composer\\Installer\\PluginInstaller::postAutoloadDump"
+	}
+}
