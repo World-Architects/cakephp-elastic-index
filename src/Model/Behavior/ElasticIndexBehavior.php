@@ -19,7 +19,8 @@ class ElasticIndexBehavior extends Behavior {
 	 */
 	protected $_defaultConfig = [
 		'type' => null,
-		'connection' => 'elastic'
+		'connection' => 'elastic',
+		'autoIndex' => true
 	];
 
 	/**
@@ -69,10 +70,14 @@ class ElasticIndexBehavior extends Behavior {
 	 * @return void
 	 */
 	public function afterSave(Event $event, EntityInterface $entity) {
-		$this->saveIndexDocument($entity);
+		if ($this->config('autoIndex') === true) {
+			$this->saveIndexDocument($entity);
+		}
 	}
 
 	/**
+	 * Saves and updates a document in the index used by the table the behavior is attached to.
+	 *
 	 * @param \Cake\Datasource\EntityInterface
 	 * @return void
 	 */
@@ -89,12 +94,7 @@ class ElasticIndexBehavior extends Behavior {
 		if ($entity->isNew()) {
 			$elasticEntity = $this->elasticIndex()->newEntity($indexData);
 		} else {
-			$elasticEntity = $this->elasticIndex()
-				->find()
-				->where([
-					'_id' => $entity->{$this->_table->primaryKey()}
-				])
-				->first();
+			$elasticEntity = $this->_findElasticDocument($entity);
 			$elasticEntity = $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
 		}
 		$this->elasticIndex()->save($elasticEntity);
@@ -108,17 +108,31 @@ class ElasticIndexBehavior extends Behavior {
 	 * @return void
 	 */
 	public function afterDelete(Event $event, EntityInterface $entity) {
-		$this->deleteIndexDocument($entity);
+		if ($this->config('autoIndex') === true) {
+			$this->deleteIndexDocument($entity);
+		}
 	}
 
 	/**
+	 * Deletes an index document.
+	 *
 	 * @param \Cake\Datasource\EntityInterface
 	 * @return void
 	 */
 	public function deleteIndexDocument(EntityInterface $entity) {
-		$elasticEntity = $this->elasticIndex()->find('first')->where([
-			'_id' => $entity->{$this->_table->primaryKey()}
-		]);
+		$elasticEntity = $this->_findElasticDocument($entity);
 		$this->elasticIndex()->delete($elasticEntity);
+	}
+
+	/**
+	 *
+	 */
+	protected function _findElasticDocument($entity) {
+		return $this->elasticIndex()
+			->find()
+			->where([
+				'_id' => $entity->{$this->_table->primaryKey()}
+			])
+			->first();
 	}
 }

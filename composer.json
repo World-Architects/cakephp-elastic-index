@@ -15,7 +15,7 @@
 			"homepage": "http://world-architects.com"
 		}
 	],
-	"minimum-stability": "stable",
+	"minimum-stability": "dev",
 	"require": {
 		"cakephp/cakephp": "^3.1",
 		"cakephp/elastic-search": "dev-master",

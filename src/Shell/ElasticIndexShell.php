@@ -37,7 +37,11 @@ class ElasticIndexShell extends Shell {
 					if (empty($records)) {
 						break;
 					}
-					$records = $table->find()->all()->limit($chunkSize)->offset($chunkCount);
+					$records = $table
+						->find()
+						->all()
+						->limit($chunkSize)
+						->offset($chunkCount);
 					foreach ($records as $records) {
 						// @todo implement indexing here
 						$progress->increment(1);
