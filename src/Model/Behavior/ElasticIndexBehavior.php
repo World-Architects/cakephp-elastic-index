@@ -95,9 +95,14 @@ class ElasticIndexBehavior extends Behavior {
 			$elasticEntity = $this->elasticIndex()->newEntity($indexData);
 		} else {
 			$elasticEntity = $this->_findElasticDocument($entity);
-			$elasticEntity = $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
+			if (empty($elasticEntity)) {
+				$elasticEntity = $this->elasticIndex()->newEntity($indexData);
+			} else {
+				$elasticEntity = $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
+			}
 		}
-		$this->elasticIndex()->save($elasticEntity);
+
+		return $this->elasticIndex()->save($elasticEntity);
 	}
 
 	/**
@@ -134,7 +139,7 @@ class ElasticIndexBehavior extends Behavior {
 		return $this->elasticIndex()
 			->find()
 			->where([
-				'_id' => $entity->{$this->_table->primaryKey()}
+				'_id' => (string)$entity->{$this->_table->primaryKey()}
 			])
 			->first();
 	}

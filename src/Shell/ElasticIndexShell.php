@@ -45,7 +45,7 @@ class ElasticIndexShell extends Shell {
 						->offset($chunkCount);
 
 					foreach ($records as $entity) {
-						$table->saveIndexDocument($entity);
+						//$table->saveIndexDocument($entity);
 						$progress->increment(1);
 					}
 				}
