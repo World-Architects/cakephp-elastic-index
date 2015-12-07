@@ -10,7 +10,7 @@ class ElasticIndexShell extends Shell {
 
 	}
 
-	protected function _geTable($table) {
+	protected function _getTable($table) {
 		$table = TableRegistry::get($table);
 		if (!in_array('ElasticIndex', $table->behaviors()->loaded())) {
 			$table->addBehavior('Psa/ElasticIndex.ElasticIndex');
@@ -37,13 +37,15 @@ class ElasticIndexShell extends Shell {
 					if (empty($records)) {
 						break;
 					}
+
 					$records = $table
 						->find()
 						->all()
 						->limit($chunkSize)
 						->offset($chunkCount);
-					foreach ($records as $records) {
-						// @todo implement indexing here
+
+					foreach ($records as $entity) {
+						$table->saveIndexDocument($entity);
 						$progress->increment(1);
 					}
 				}
@@ -55,13 +57,17 @@ class ElasticIndexShell extends Shell {
 	 * Updates a single document in the index.
 	 */
 	public function updateDocument() {
-
+		$table = $this->_getTable();
+		$entity = $table->get($this->args[0]);
+		$table->saveIndexDocument($entity);
 	}
 
 	/**
 	 * Deletes a single document in the index.
 	 */
 	public function deleteDocument() {
-
+		$table = $this->_getTable();
+		$entity = $table->get($this->args[0]);
+		$table->removeIndexDocument($entity);
 	}
 }

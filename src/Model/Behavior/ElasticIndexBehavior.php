@@ -39,7 +39,6 @@ class ElasticIndexBehavior extends Behavior {
 	public function __construct(Table $table, array $config = []) {
 		$this->_defaultConfig['type'] = Inflector::underscore($table->table());
 		parent::__construct($table, $config);
-
 		$this->elasticIndex($this->config('type'), $this->config('connection'));
 	}
 
@@ -87,6 +86,7 @@ class ElasticIndexBehavior extends Behavior {
 		} else {
 			$indexData = $entity;
 		}
+
 		if ($indexData instanceof EntityInterface) {
 			$indexData = $indexData->toArray();
 		}
@@ -125,7 +125,10 @@ class ElasticIndexBehavior extends Behavior {
 	}
 
 	/**
+	 * Finds an elastic index document for an entity of the current table.
 	 *
+	 * @param \Cake\ORM\EntityInterface
+	 * @return \Cake\ElasticSearch\Datasource\Document
 	 */
 	protected function _findElasticDocument($entity) {
 		return $this->elasticIndex()
