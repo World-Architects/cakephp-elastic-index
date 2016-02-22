@@ -191,7 +191,6 @@ class ElasticIndexShell extends Shell {
         $table->removeIndexDocument($entity);
     }
 
-
     /**
      * Gets an index from the active connection.
      *
@@ -199,8 +198,8 @@ class ElasticIndexShell extends Shell {
      */
     protected function _getIndex()
     {
-        $connection = ConnectionManager::get($this->params['connection']);
-        return $connection->getIndex($this->params['index']);
+        return ConnectionManager::get($this->params['connection'])
+            ->getIndex($this->params['index']);
     }
 
     /**
@@ -249,6 +248,37 @@ class ElasticIndexShell extends Shell {
         $typeClass->applyMapping();
 
         $this->out('Schema mapping for "' . $this->args[0] . '"" created.');
+    }
+
+    /**
+     * Drops an index.
+     *
+     * @return void
+     */
+    public function dropIndex()
+    {
+        $elasticaIndex = $this->_getIndex();
+        if ($elasticaIndex->exists()) {
+            $elasticaIndex->delete();
+            $this->out('Index "' . $this->params['index'] . '" dropped.');
+            return;
+        }
+        $this->error('Index "' . $this->params['index'] . '" does not exist.');
+    }
+
+    /**
+     * Creates a new index
+     *
+     * @return void
+     */
+    public function createIndex()
+    {
+        $elasticaIndex = $this->_getIndex();
+        if ($elasticaIndex->exists()) {
+            $this->error('Index ' . $this->params['index'] . ' already exist.');
+        }
+        $elasticaIndex->create();
+        $this->out('Index "' . $this->params['index'] . '" created.');
     }
 
     /**
