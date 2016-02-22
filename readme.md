@@ -2,7 +2,14 @@
 
 The plugin provides a behavior that will automatically index the data of tables it is attached to in the elastic search index.
 
+## Requirements
+
+* CakePHP 3.x
+* CakePHP Elastic Search Plugin
+
 ## Documentation
+
+The documentation can be found in [the docs folder](docs/Home.md).
 
 ## License
 
