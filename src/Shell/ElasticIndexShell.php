@@ -1,8 +1,10 @@
 <?php
 namespace Psa\ElasticIndex\Shell;
 
-use Cake\Core\Configure;
 use Cake\Console\Shell;
+use Cake\Core\Configure;
+use Cake\Datasource\ConnectionManager;
+use Cake\ElasticSearch\TypeRegistry;
 use Cake\ORM\TableRegistry;
 
 class ElasticIndexShell extends Shell {
