@@ -12,14 +12,22 @@ class ElasticIndexShell extends Shell {
      *
      * @var array
      */
-   	protected $_indexableTables = [];
+    protected $_indexableTables = [];
 
+    /**
+     * {@inheritdoc}
+     */
     public function initialize()
     {
         parent::initialize();
         $this->_indexableTables = (array)Configure::read('ElasticIndex.indexableTables');
     }
 
+    /**
+     * Main entry point
+     *
+     * @return void
+     */
     public function main()
     {
         $this->chooseModel();
@@ -27,6 +35,8 @@ class ElasticIndexShell extends Shell {
 
     /**
      * Let the user choose a model to index.
+     *
+     * @return void
      */
     public function chooseModel() {
         if (empty($this->_indexableTables)) {
@@ -46,9 +56,17 @@ class ElasticIndexShell extends Shell {
         $this->build();
     }
 
-    protected function _getTable($table)
+    /**
+     * Gets a table object of a table to index.
+     *
+     * If the table doesn't have the behavior loaded it will be loaded.
+     *
+     * @param string $tableName
+     * @return \Cake\ORM\Table
+     */
+    protected function _getTable($tableName)
     {
-        $table = TableRegistry::get($table);
+        $table = TableRegistry::get($tableName);
         if (!in_array('ElasticIndex', $table->behaviors()->loaded()))
         {
             $table->addBehavior('Psa/ElasticIndex.ElasticIndex');
@@ -56,6 +74,11 @@ class ElasticIndexShell extends Shell {
         return $table;
     }
 
+    /**
+     * Gets table name(s) from the input
+     *
+     * @return array
+     */
     protected function _getTablesFromInput()
     {
         if (empty($this->params['table'])) {
@@ -66,6 +89,8 @@ class ElasticIndexShell extends Shell {
 
     /**
      * (Re-)Builds the whole index for a given table.
+     *
+     * @return void
      */
     public function build()
     {
@@ -78,12 +103,15 @@ class ElasticIndexShell extends Shell {
         $this->out('Done indexing.');
     }
 
+    /**
+     * The actual index building method that iterates over the table data.
+     *
+     * @param string $tableName
+     * @return void
+     */
     protected function _buildIndex($tableName)
     {
-        $table = TableRegistry::get($tableName);
-        if (!$table->hasBehavior('ElasticIndex')) {
-            $this->error(__d('elastic_index', 'Table `{0}` is not using the ElasticIndex behavior!', get_class($table)));
-        }
+        $table = $this->_getTable($tableName);
 
         $query = $table->find();
         if ($table->hasFinder('buildIndex')) {
@@ -116,7 +144,8 @@ class ElasticIndexShell extends Shell {
      * @param int $chunkSize
      * @return void
      */
-    protected function _process($table, $chunkCount, $chunkSize) {
+    protected function _process($table, $chunkCount, $chunkSize)
+    {
         $query = $table->find();
         if ($table->hasFinder('buildIndex')) {
             $query->find('buildIndex');
