@@ -17,8 +17,8 @@
 	],
 	"minimum-stability": "dev",
 	"require": {
-		"cakephp/cakephp": "^3.1",
-		"cakephp/elastic-search": "dev-master",
+		"cakephp/cakephp": "3.*",
+		"cakephp/elastic-search": "*",
 		"cakephp/plugin-installer": "*"
 	},
 	"require-dev": {
