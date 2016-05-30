@@ -40,7 +40,8 @@ class ElasticIndexShell extends Shell {
      *
      * @return void
      */
-    public function chooseModel() {
+    public function chooseModel()
+    {
         if (empty($this->_indexableTables)) {
             $this->out(__d('elastic_index', 'No tables that could be indexed were found.'));
             return;
@@ -121,6 +122,7 @@ class ElasticIndexShell extends Shell {
         }
 
         $total = $query->all()->count();
+        $this->out(sprintf('Going to process %d records.', $total));
 
         $this->helper('progress')->output([
             'total' => $total,
@@ -196,7 +198,7 @@ class ElasticIndexShell extends Shell {
     /**
      * Gets an index from the active connection.
      *
-     * @return
+     * @return \Elastica\Index
      */
     protected function _getIndex()
     {
@@ -216,6 +218,8 @@ class ElasticIndexShell extends Shell {
             'help' => 'Creates an index.'
         ])->addArgument('dropIndex', [
             'help' => 'Drops an index.'
+        ])->addArgument('dropType', [
+            'help' => 'Drops a type.'
         ])->addOption('connection', [
             'short' => 'c',
             'help' => __d('elastic_index', 'The connection you want to use.'),
@@ -245,7 +249,7 @@ class ElasticIndexShell extends Shell {
 
         $typeClass = TypeRegistry::get($this->args[0]);
         if (!method_Exists($typeClass, 'applyMapping')) {
-            $this->error(__d('elastic_index', 'Type `{0}` doesn\'t have a method applyMapping() implemented!', get_class($typeClass)));
+            $this->abort(__d('elastic_index', 'Type `{0}` doesn\'t have a method applyMapping() implemented!', get_class($typeClass)));
         }
         $typeClass->applyMapping();
 
@@ -265,7 +269,23 @@ class ElasticIndexShell extends Shell {
             $this->out('Index "' . $this->params['index'] . '" dropped.');
             return;
         }
-        $this->error('Index "' . $this->params['index'] . '" does not exist.');
+        $this->abort('Index "' . $this->params['index'] . '" does not exist.');
+    }
+
+    /**
+     * Drops an index.
+     *
+     * @return void
+     */
+    public function dropType()
+    {
+        $elasticaIndex = $this->_getIndex();
+        if ($elasticaIndex->exists()) {
+            $elasticaIndex->delete();
+            $this->out('Index "' . $this->params['index'] . '" dropped.');
+            return;
+        }
+        $this->abort('Index "' . $this->params['index'] . '" does not exist.');
     }
 
     /**
@@ -277,7 +297,7 @@ class ElasticIndexShell extends Shell {
     {
         $elasticaIndex = $this->_getIndex();
         if ($elasticaIndex->exists()) {
-            $this->error('Index ' . $this->params['index'] . ' already exist.');
+            $this->abort('Index ' . $this->params['index'] . ' already exist.');
         }
         $elasticaIndex->create();
         $this->out('Index "' . $this->params['index'] . '" created.');
@@ -297,7 +317,7 @@ class ElasticIndexShell extends Shell {
         }
         $this->err('<error>Error:</error> L' . $e->getLine() . ' ' . $e->getFile());
         if ($quit === true) {
-            $this->error($e->getMessage());
+            $this->err($e->getMessage());
         }
         $this->err('<error>Error: ' . $e->getMessage() . '</error>');
     }
