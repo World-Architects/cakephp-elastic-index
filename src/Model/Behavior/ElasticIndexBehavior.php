@@ -1,7 +1,6 @@
 <?php
 namespace Psa\ElasticIndex\Model\Behavior;
 
-use \ArrayObject;
 use Cake\Datasource\ConnectionManager;
 use Cake\Event\Event;
 use Cake\ORM\Behavior;
@@ -61,6 +60,26 @@ class ElasticIndexBehavior extends Behavior {
             ]);
         }
         return $this->_elasticType;
+    }
+
+    /**
+     * Disables the automatic indexing
+     *
+     * @return void
+     */
+    public function disableIndexing()
+    {
+        $this->config('autoIndex', false);
+    }
+
+    /**
+     * Enables the automatic indexing
+     *
+     * @return void
+     */
+    public function enableIndexing()
+    {
+        $this->config('autoIndex', true);
     }
 
     /**
