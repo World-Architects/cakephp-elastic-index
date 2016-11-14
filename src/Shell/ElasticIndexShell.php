@@ -122,13 +122,21 @@ class ElasticIndexShell extends Shell {
         }
 
         $total = $query->all()->count();
-        $this->out(sprintf('Going to process %d records.', $total));
+        $offset = $chunkCount = $this->param('offset');
+        if ($offset > $total) {
+            $this->abort(sprintf('Offset (%d) is bigger than the total number (%d) of records', $offset, $total));
+        }
+
+        if ($offset > 0) {
+            $this->out(sprintf('Going to process %d records of %d.', $total - $offset, $total));
+        } else {
+            $this->out(sprintf('Going to process %d records.', $total));
+        }
 
         $this->helper('progress')->output([
             'total' => $total,
-            'callback' => function ($progress) use ($total, $table) {
-                $chunkSize = 25;
-                $chunkCount = 0;
+            'callback' => function ($progress) use ($total, $table, $chunkCount) {
+                $chunkSize = $this->param('chunkSize');
                 while ($chunkCount <= $total) {
                     $this->_process($table, $chunkCount, $chunkSize);
                     $chunkCount = $chunkCount + $chunkSize;
@@ -228,6 +236,14 @@ class ElasticIndexShell extends Shell {
             'short' => 'i',
             'help' => __d('elastic_index', 'The index you want to use.'),
             'default' => ''
+        ])->addOption('chunkSize', [
+            'short' => 's',
+            'help' => __d('elastic_index', 'Chunk size.'),
+            'default' => 50
+        ])->addOption('offset', [
+            'short' => 'o',
+            'help' => __d('elastic_index', 'Offset to start at.'),
+            'default' => 0
         ])->addOption('table', [
             'short' => 't',
             'help' => __d('elastic_index', 'The table you want to use.'),
