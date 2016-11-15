@@ -244,6 +244,14 @@ class ElasticIndexShell extends Shell {
             'short' => 'o',
             'help' => __d('elastic_index', 'Offset to start at.'),
             'default' => 0
+        ])->addOption('stop', [
+            'short' => 's',
+            'help' => __d('elastic_index', 'Stop after X records'),
+            'default' => null
+        ])->addOption('limit', [
+            'short' => 'l',
+            'help' => __d('elastic_index', 'Limit.'),
+            'default' => 50
         ])->addOption('table', [
             'short' => 't',
             'help' => __d('elastic_index', 'The table you want to use.'),
@@ -260,7 +268,7 @@ class ElasticIndexShell extends Shell {
     public function mapping()
     {
         if (empty($this->args[0])) {
-            $this->error('No type given!');
+            $this->err('No type given!');
         }
 
         $typeClass = TypeRegistry::get($this->args[0]);
@@ -291,7 +299,7 @@ class ElasticIndexShell extends Shell {
     /**
      * Drops an index.
      *
-     * @return void
+     * @return void$
      */
     public function dropType()
     {
