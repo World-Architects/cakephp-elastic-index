@@ -17,6 +17,11 @@ class ElasticIndexShell extends Shell {
     protected $_indexableTables = [];
 
     /**
+     *
+     */
+    protected $_counter = 0;
+
+    /**
      * {@inheritdoc}
      */
     public function initialize()
@@ -103,7 +108,8 @@ class ElasticIndexShell extends Shell {
             $this->_buildIndex($table);
             $this->out(sprintf('Finished building index for table "%s".', $table));
         }
-        $this->out('Done indexing.');
+
+        $this->out(__d('elastic_index', 'Done indexing.'));
     }
 
     /**
@@ -123,6 +129,8 @@ class ElasticIndexShell extends Shell {
 
         $total = $query->all()->count();
         $offset = $this->param('offset');
+        $limit = $this->param('limit');
+
         if ($offset > $total) {
             $this->abort(sprintf('Offset (%d) is bigger than the total number (%d) of records', $offset, $total));
         }
@@ -135,14 +143,14 @@ class ElasticIndexShell extends Shell {
 
         $this->helper('progress')->output([
             'total' => $total,
-            'callback' => function ($progress) use ($total, $table, $offset) {
-                $limit = $this->param('chunkSize');
+            'callback' => function ($progress) use ($total, $table, $offset, $limit) {
                 while ($offset <= $total) {
                     $this->_process($table, $offset, $limit);
                     $offset = $offset + $limit;
                     $progress->increment($limit);
                     $progress->draw();
                 }
+
                 return;
             }
         ]);
@@ -177,6 +185,13 @@ class ElasticIndexShell extends Shell {
             try {
                 $table->saveIndexDocument($result);
                 $offset++;
+                $this->_counter++;
+                $stop = $this->param('stop');
+
+                if ($this->_counter >= $stop) {
+                    $this->info(sprintf('Stopped after %d records.', $stop), 0);
+                    exit(0);
+                }
             } catch (\Exception $e) {
                 $this->printException($e);
             }
@@ -236,10 +251,6 @@ class ElasticIndexShell extends Shell {
             'short' => 'i',
             'help' => __d('elastic_index', 'The index you want to use.'),
             'default' => ''
-        ])->addOption('chunkSize', [
-            'short' => 's',
-            'help' => __d('elastic_index', 'Chunk size.'),
-            'default' => 50
         ])->addOption('offset', [
             'short' => 'o',
             'help' => __d('elastic_index', 'Offset to start at.'),
@@ -277,7 +288,7 @@ class ElasticIndexShell extends Shell {
         }
         $typeClass->applyMapping();
 
-        $this->out('Schema mapping for "' . $this->args[0] . '"" created.');
+        $this->out(__d('elastic_index', 'Schema mapping for `{0}` created.', [$this->args[0]]));
     }
 
     /**
@@ -290,10 +301,10 @@ class ElasticIndexShell extends Shell {
         $elasticaIndex = $this->_getIndex();
         if ($elasticaIndex->exists()) {
             $elasticaIndex->delete();
-            $this->out('Index "' . $this->params['index'] . '" dropped.');
+            $this->out(__d('elastic_index', 'Index `{0}` dropped.', [$this->params['index']]));
             return;
         }
-        $this->abort('Index "' . $this->params['index'] . '" does not exist.');
+        $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->params['index']]));
     }
 
     /**
@@ -306,10 +317,11 @@ class ElasticIndexShell extends Shell {
         $elasticaIndex = $this->_getIndex();
         if ($elasticaIndex->exists()) {
             $elasticaIndex->delete();
-            $this->out('Index "' . $this->params['index'] . '" dropped.');
+            $this->out(__d('elastic_index', 'Index `{0}` dropped.', [$this->params['index']]));
+
             return;
         }
-        $this->abort('Index "' . $this->params['index'] . '" does not exist.');
+        $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->params['index']]));
     }
 
     /**
@@ -321,10 +333,11 @@ class ElasticIndexShell extends Shell {
     {
         $elasticaIndex = $this->_getIndex();
         if ($elasticaIndex->exists()) {
-            $this->abort('Index ' . $this->params['index'] . ' already exist.');
+            $this->abort(__d('elastic_index', 'Index `{0}` already exist.', [$this->params['index']]));
         }
+
         $elasticaIndex->create();
-        $this->out('Index "' . $this->params['index'] . '" created.');
+        $this->out(__d('elastic_index', 'Index `{0}` created.', [$this->params['index']]));
     }
 
     /**
