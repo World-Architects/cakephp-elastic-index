@@ -122,7 +122,7 @@ class ElasticIndexShell extends Shell {
         }
 
         $total = $query->all()->count();
-        $offset = $chunkCount = $this->param('offset');
+        $offset = $this->param('offset');
         if ($offset > $total) {
             $this->abort(sprintf('Offset (%d) is bigger than the total number (%d) of records', $offset, $total));
         }
@@ -135,12 +135,12 @@ class ElasticIndexShell extends Shell {
 
         $this->helper('progress')->output([
             'total' => $total,
-            'callback' => function ($progress) use ($total, $table, $chunkCount) {
-                $chunkSize = $this->param('chunkSize');
-                while ($chunkCount <= $total) {
-                    $this->_process($table, $chunkCount, $chunkSize);
-                    $chunkCount = $chunkCount + $chunkSize;
-                    $progress->increment($chunkSize);
+            'callback' => function ($progress) use ($total, $table, $offset) {
+                $limit = $this->param('chunkSize');
+                while ($offset <= $total) {
+                    $this->_process($table, $offset, $limit);
+                    $offset = $offset + $limit;
+                    $progress->increment($limit);
                     $progress->draw();
                 }
                 return;
@@ -152,11 +152,11 @@ class ElasticIndexShell extends Shell {
      * Processes the records.
      *
      * @param \Cake\ORM\Table $table
-     * @param int $chunkCount
-     * @param int $chunkSize
+     * @param int $offset
+     * @param int $limit
      * @return void
      */
-    protected function _process($table, $chunkCount, $chunkSize)
+    protected function _process($table, $offset, $limit)
     {
         $query = $table->find();
         if ($table->hasFinder('buildIndex')) {
@@ -164,8 +164,8 @@ class ElasticIndexShell extends Shell {
         }
 
         $results = $query
-            ->offset($chunkCount)
-            ->limit($chunkSize)
+            ->offset($offset)
+            ->limit($limit)
             ->orderDesc($table->aliasField($table->primaryKey()))
             ->all();
 
@@ -176,7 +176,7 @@ class ElasticIndexShell extends Shell {
         foreach ($results as $result) {
             try {
                 $table->saveIndexDocument($result);
-                $chunkCount++;
+                $offset++;
             } catch (\Exception $e) {
                 $this->printException($e);
             }
