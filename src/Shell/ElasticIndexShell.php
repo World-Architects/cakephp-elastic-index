@@ -58,7 +58,8 @@ class ElasticIndexShell extends Shell {
         foreach ($this->_indexableTables as $key => $table) {
             $this->out('[' . $key . ']' . ' ' . $table);
         }
-        $selection = $this->in('Choose the table you want to index:');
+
+        $selection = $this->in(__d('elastic_index', 'Choose the table you want to index:'));
         $this->params['table'] = $this->_indexableTables[$selection];
 
         $this->build();
@@ -79,6 +80,7 @@ class ElasticIndexShell extends Shell {
         {
             $table->addBehavior('Psa/ElasticIndex.ElasticIndex');
         }
+
         return $table;
     }
 
@@ -92,6 +94,7 @@ class ElasticIndexShell extends Shell {
         if (empty($this->params['table'])) {
             return $this->_indexableTables;
         }
+
         return explode(',', $this->params['table']);
     }
 
@@ -104,9 +107,9 @@ class ElasticIndexShell extends Shell {
     {
         $tables = $this->_getTablesFromInput();
         foreach ($tables as $table) {
-            $this->out(sprintf('Start building index for table "%s".', $table));
+            $this->out(__d('elastic_index', 'Start building index for table "{0}".', [$table]));
             $this->_buildIndex($table);
-            $this->out(sprintf('Finished building index for table "%s".', $table));
+            $this->out(__d('elastic_index', 'Finished building index for table "{0}".', [$table]));
         }
 
         $this->out(__d('elastic_index', 'Done indexing.'));
@@ -188,7 +191,7 @@ class ElasticIndexShell extends Shell {
                 $this->_counter++;
                 $stop = $this->param('stop');
 
-                if ($this->_counter >= $stop) {
+                if ($stop && $this->_counter >= $stop) {
                     $this->info(sprintf('Stopped after %d records.', $stop), 0);
                     exit(0);
                 }
@@ -258,7 +261,7 @@ class ElasticIndexShell extends Shell {
         ])->addOption('stop', [
             'short' => 's',
             'help' => __d('elastic_index', 'Stop after X records'),
-            'default' => null
+            'default' => false
         ])->addOption('limit', [
             'short' => 'l',
             'help' => __d('elastic_index', 'Limit.'),
