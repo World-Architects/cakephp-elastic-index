@@ -55,10 +55,15 @@ class ElasticIndexBehavior extends Behavior {
             if (empty($connection)) {
                 $connection = $this->config('connection');
             }
-            $this->_elasticType = TypeRegistry::get($this->config('type'), [
-                'connection' => ConnectionManager::get($this->config('connection'))
-            ]);
+            if (!TypeRegistry::exists($this->config('type'))) {
+                $this->_elasticType = TypeRegistry::get($this->config('type'), [
+                    'connection' => ConnectionManager::get($this->config('connection'))
+                ]);
+            } else {
+                $this->_elasticType = TypeRegistry::get($this->config('type'));
+            }
         }
+
         return $this->_elasticType;
     }
 
