@@ -3,7 +3,7 @@
 	"type": "cakephp-plugin",
 	"description": "Plugin to index relational data in the elastic search index",
 	"keywords": ["search", "index", "elastic", "elastica"],
-	"homepage": "http://world-architects.com",
+	"homepage": "https://github.com/World-Architects/cakephp-elastic-index",
 	"license": "Proprietary",
 	"authors": [
 		{
