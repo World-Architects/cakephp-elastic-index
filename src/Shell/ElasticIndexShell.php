@@ -17,7 +17,9 @@ class ElasticIndexShell extends Shell {
     protected $_indexableTables = [];
 
     /**
+     * Counter
      *
+     * @var int
      */
     protected $_counter = 0;
 
@@ -307,6 +309,7 @@ class ElasticIndexShell extends Shell {
             $this->out(__d('elastic_index', 'Index `{0}` dropped.', [$this->params['index']]));
             return;
         }
+
         $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->params['index']]));
     }
 
@@ -324,6 +327,7 @@ class ElasticIndexShell extends Shell {
 
             return;
         }
+
         $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->params['index']]));
     }
 

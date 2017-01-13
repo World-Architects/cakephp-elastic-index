@@ -9,6 +9,12 @@ use Cake\Datasource\EntityInterface;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\Utility\Inflector;
 
+/**
+ * ElasticIndexBehavior
+ *
+ * This behavior will automatically add documents into a type for you. It will
+ * also remove the document from the index as well on after delete.
+ */
 class ElasticIndexBehavior extends Behavior {
 
     /**

@@ -2,7 +2,7 @@
 	"name": "psa/cakephp-elastic-index",
 	"type": "cakephp-plugin",
 	"description": "Plugin to index relational data in the elastic search index",
-	"keywords": ["search", "index", "elastic"],
+	"keywords": ["search", "index", "elastic", "elastica"],
 	"homepage": "http://world-architects.com",
 	"license": "Proprietary",
 	"authors": [
