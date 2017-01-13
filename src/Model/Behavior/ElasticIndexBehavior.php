@@ -156,6 +156,9 @@ class ElasticIndexBehavior extends Behavior {
     public function deleteIndexDocument(EntityInterface $entity)
     {
         $elasticEntity = $this->_findElasticDocument($entity);
+        if (empty($elasticEntity)) {
+            return;
+        }
         $this->elasticIndex()->delete($elasticEntity);
     }
 
