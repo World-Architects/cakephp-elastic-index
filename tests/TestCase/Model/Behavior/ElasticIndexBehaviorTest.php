@@ -1,6 +1,8 @@
 <?php
 namespace Psa\ElasticIndex\Test\TestCase\Model\Behavior;
 
+use Cake\ElasticSearch\Type;
+use Cake\ElasticSearch\TypeRegistry;
 use Cake\TestSuite\TestCase;
 use Cake\ORM\TableRegistry;
 
@@ -40,11 +42,11 @@ class ElasticIndexBehavior extends TestCase {
     }
 
     /**
-     * testSomething
+     * testSaving
      *
      * @return void
      */
-    public function testSomething()
+    public function testSaving()
     {
         $this->Projects->addBehavior('Psa/ElasticIndex.ElasticIndex', [
             'connection' => 'test_elastic'
@@ -57,6 +59,7 @@ class ElasticIndexBehavior extends TestCase {
                 ['title' => 'foo2', 'body' => 'bar2'],
             ]
         ]);
+
         $this->Projects->save($entity);
     }
 

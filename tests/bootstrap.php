@@ -16,7 +16,7 @@ Configure::write('App', [
     ]
 ]);
 
-Cache::config('_cake_core_', [
+Cache::setConfig('_cake_core_', [
     'className' => 'File',
     'path' => sys_get_temp_dir(),
 ]);
@@ -29,13 +29,13 @@ if (!getenv('db_dsn_elastic')) {
 }
 
 Plugin::load('Cake/ElasticSearch', [
-	'path' => dirname(dirname(__FILE__)) . DS,
-	'bootstrap' => false
+    'path' => dirname(dirname(__FILE__)) . DS,
+    'bootstrap' => false
 ]);
 Plugin::load('Psa/ElasticIndex', [
-	'path' => dirname(dirname(__FILE__)) . DS,
-	'autoload' => false,
-	'bootstrap' => false
+    'path' => dirname(dirname(__FILE__)) . DS,
+    'autoload' => false,
+    'bootstrap' => false
 ]);
 
 ConnectionManager::config('test', ['url' => getenv('db_dsn')]);
