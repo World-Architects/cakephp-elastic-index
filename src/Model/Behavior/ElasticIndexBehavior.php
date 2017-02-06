@@ -45,7 +45,7 @@ class ElasticIndexBehavior extends Behavior {
     {
         $this->_defaultConfig['type'] = Inflector::underscore($table->table());
         parent::__construct($table, $config);
-        $this->elasticIndex($this->config('type'), $this->config('connection'));
+        $this->elasticIndex($this->getConfig('type'), $this->config('connection'));
     }
 
     /**
@@ -59,14 +59,14 @@ class ElasticIndexBehavior extends Behavior {
     {
         if (!empty($type)) {
             if (empty($connection)) {
-                $connection = $this->config('connection');
+                $connection = $this->getConfig('connection');
             }
-            if (!TypeRegistry::exists($this->config('type'))) {
-                $this->_elasticType = TypeRegistry::get($this->config('type'), [
-                    'connection' => ConnectionManager::get($this->config('connection'))
+            if (!TypeRegistry::exists($this->getConfig('type'))) {
+                $this->_elasticType = TypeRegistry::get($this->getConfig('type'), [
+                    'connection' => ConnectionManager::get($this->getConfig('connection'))
                 ]);
             } else {
-                $this->_elasticType = TypeRegistry::get($this->config('type'));
+                $this->_elasticType = TypeRegistry::get($this->getConfig('type'));
             }
         }
 
@@ -80,7 +80,7 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function disableIndexing()
     {
-        $this->config('autoIndex', false);
+        $this->setConfig('autoIndex', false);
     }
 
     /**
@@ -90,7 +90,7 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function enableIndexing()
     {
-        $this->config('autoIndex', true);
+        $this->setConfig('autoIndex', true);
     }
 
     /**
@@ -102,7 +102,7 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function afterSave(Event $event, EntityInterface $entity)
     {
-        if ($this->config('autoIndex') === true) {
+        if ($this->getConfig('autoIndex') === true) {
             $this->saveIndexDocument($entity);
         }
     }
@@ -148,7 +148,7 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function afterDelete(Event $event, EntityInterface $entity)
     {
-        if ($this->config('autoIndex') === true) {
+        if ($this->getConfig('autoIndex') === true) {
             $this->deleteIndexDocument($entity);
         }
     }

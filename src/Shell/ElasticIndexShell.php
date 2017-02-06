@@ -93,11 +93,12 @@ class ElasticIndexShell extends Shell {
      */
     protected function _getTablesFromInput()
     {
-        if (empty($this->params['table'])) {
+        $table = $this->param('table');
+        if (empty($table)) {
             return $this->_indexableTables;
         }
 
-        return explode(',', $this->params['table']);
+        return explode(',', $table);
     }
 
     /**
@@ -230,8 +231,8 @@ class ElasticIndexShell extends Shell {
      */
     protected function _getIndex()
     {
-        return ConnectionManager::get($this->params['connection'])
-            ->getIndex($this->params['index']);
+        return ConnectionManager::get($this->param('connection'))
+            ->getIndex($this->param('index'));
     }
 
     /**
@@ -273,6 +274,7 @@ class ElasticIndexShell extends Shell {
             'help' => __d('elastic_index', 'The table you want to use.'),
             'default' => null
         ]);
+
         return $parser;
     }
 
@@ -284,13 +286,14 @@ class ElasticIndexShell extends Shell {
     public function mapping()
     {
         if (empty($this->args[0])) {
-            $this->err('No type given!');
+            $this->err(__d('elastic_index', 'No type given!'));
         }
 
         $typeClass = TypeRegistry::get($this->args[0]);
         if (!method_Exists($typeClass, 'applyMapping')) {
             $this->abort(__d('elastic_index', 'Type `{0}` doesn\'t have a method applyMapping() implemented!', get_class($typeClass)));
         }
+
         $typeClass->applyMapping();
 
         $this->out(__d('elastic_index', 'Schema mapping for `{0}` created.', [$this->args[0]]));
@@ -306,11 +309,11 @@ class ElasticIndexShell extends Shell {
         $elasticaIndex = $this->_getIndex();
         if ($elasticaIndex->exists()) {
             $elasticaIndex->delete();
-            $this->out(__d('elastic_index', 'Index `{0}` dropped.', [$this->params['index']]));
+            $this->out(__d('elastic_index', 'Index `{0}` dropped.', [$this->param('index')]));
             return;
         }
 
-        $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->params['index']]));
+        $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->param('index')]));
     }
 
     /**
@@ -323,12 +326,12 @@ class ElasticIndexShell extends Shell {
         $elasticaIndex = $this->_getIndex();
         if ($elasticaIndex->exists()) {
             $elasticaIndex->delete();
-            $this->out(__d('elastic_index', 'Index `{0}` dropped.', [$this->params['index']]));
+            $this->out(__d('elastic_index', 'Index `{0}` dropped.', [$this->param('index')]));
 
             return;
         }
 
-        $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->params['index']]));
+        $this->abort(__d('elastic_index', 'Index `{0}` does not exist.', [$this->param('index')]));
     }
 
     /**
@@ -340,11 +343,11 @@ class ElasticIndexShell extends Shell {
     {
         $elasticaIndex = $this->_getIndex();
         if ($elasticaIndex->exists()) {
-            $this->abort(__d('elastic_index', 'Index `{0}` already exist.', [$this->params['index']]));
+            $this->abort(__d('elastic_index', 'Index `{0}` already exist.', [$this->param('index')]));
         }
 
         $elasticaIndex->create();
-        $this->out(__d('elastic_index', 'Index `{0}` created.', [$this->params['index']]));
+        $this->out(__d('elastic_index', 'Index `{0}` created.', [$this->param('index')]));
     }
 
     /**

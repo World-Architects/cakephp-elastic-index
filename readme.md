@@ -4,7 +4,7 @@ The plugin provides a behavior that will automatically index the data of tables 
 
 ## Requirements
 
-* CakePHP 3.x
+* CakePHP 3.4
 * CakePHP Elastic Search Plugin
 
 ## Documentation
