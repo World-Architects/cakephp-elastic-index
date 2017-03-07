@@ -75,15 +75,26 @@ class ElasticIndexShell extends Shell {
      * @param string $tableName
      * @return \Cake\ORM\Table
      */
-    protected function _getTable($tableName)
+    protected function _getTable($tableName = null)
     {
-        $table = TableRegistry::get($tableName);
-        if (!in_array('ElasticIndex', $table->behaviors()->loaded()))
-        {
-            $table->addBehavior('Psa/ElasticIndex.ElasticIndex');
+        if ($tableName === null) {
+            $tableName = $this->param('table');
         }
 
-        return $table;
+        if (empty($tableName)) {
+            $this->abort('No --table option provided!');
+        }
+
+        try {
+            $table = TableRegistry::get($tableName);
+            if (!in_array('ElasticIndex', $table->behaviors()->loaded())) {
+                $table->addBehavior('Psa/ElasticIndex.ElasticIndex');
+            }
+
+            return $table;
+        } catch (\Exception $e) {
+            $this->printException($e);
+        }
     }
 
     /**
@@ -210,8 +221,21 @@ class ElasticIndexShell extends Shell {
     public function updateDocument()
     {
         $table = $this->_getTable();
-        $entity = $table->get($this->args[0]);
-        $table->saveIndexDocument($entity);
+        if (!isset($this->args[0])) {
+            $this->abort('No id passed');
+        }
+
+        if ($table->behaviors()->hasMethod('getIndexData')
+            || method_exists($this, 'getIndexData'))
+        {
+            $entity = $table->getIndexData($this->args[0]);
+        } else {
+            $entity = $table->get($this->args[0]);
+        }
+
+        if ($table->saveIndexDocument($entity)) {
+            $this->success('Updated');
+        }
     }
 
     /**
@@ -220,6 +244,10 @@ class ElasticIndexShell extends Shell {
     public function deleteDocument()
     {
         $table = $this->_getTable();
+        if (isset($this->args[0])) {
+            $this->abort('No id passed');
+        }
+
         $entity = $table->get($this->args[0]);
         $table->removeIndexDocument($entity);
     }
@@ -367,5 +395,6 @@ class ElasticIndexShell extends Shell {
             $this->err($e->getMessage());
         }
         $this->err('<error>Error: ' . $e->getMessage() . '</error>');
+        $this->abort('');
     }
 }
