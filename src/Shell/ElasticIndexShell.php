@@ -181,7 +181,7 @@ class ElasticIndexShell extends Shell {
      * @param int $limit
      * @return void
      */
-    protected function _process($table, $offset, $limit)
+    protected function _process($table, $offset, $limit, $bulk = false)
     {
         $query = $table->find();
         if ($table->hasFinder('buildIndex')) {
@@ -198,11 +198,11 @@ class ElasticIndexShell extends Shell {
             return;
         }
 
-        foreach ($results as $result) {
+        if ($bulk === true) {
             try {
-                $table->saveIndexDocument($result);
-                $offset++;
-                $this->_counter++;
+                $table->saveIndexDocuments($results);
+                $offset = $offset + $limit;
+                $this->_counter = $this->_counter + $limit;
                 $stop = $this->param('stop');
 
                 if ($stop && $this->_counter >= $stop) {
@@ -211,6 +211,22 @@ class ElasticIndexShell extends Shell {
                 }
             } catch (\Exception $e) {
                 $this->printException($e);
+            }
+        } else {
+            foreach ($results as $result) {
+                try {
+                    $table->saveIndexDocument($result);
+                    $offset++;
+                    $this->_counter++;
+                    $stop = $this->param('stop');
+
+                    if ($stop && $this->_counter >= $stop) {
+                        $this->info(sprintf('Stopped after %d records.', $stop), 0);
+                        exit(0);
+                    }
+                } catch (\Exception $e) {
+                    $this->printException($e);
+                }
             }
         }
     }

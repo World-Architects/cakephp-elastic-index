@@ -107,14 +107,7 @@ class ElasticIndexBehavior extends Behavior {
         }
     }
 
-    /**
-     * Saves and updates a document in the index used by the table the behavior is attached to.
-     *
-     * @param \Cake\Datasource\EntityInterface
-     * @return void
-     */
-    public function saveIndexDocument(EntityInterface $entity)
-    {
+    protected function _newOrPatch(EntityInterface $entity) {
         if (method_exists($this->_table, 'getIndexData')) {
             $indexData = $this->_table->getIndexData($entity);
         } else {
@@ -126,17 +119,35 @@ class ElasticIndexBehavior extends Behavior {
         }
 
         if ($entity->isNew()) {
-            $elasticEntity = $this->elasticIndex()->newEntity($indexData);
-        } else {
-            $elasticEntity = $this->_findElasticDocument($entity);
-            if (empty($elasticEntity)) {
-                $elasticEntity = $this->elasticIndex()->newEntity($indexData);
-            } else {
-                $elasticEntity = $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
-            }
+            return $this->elasticIndex()->newEntity($indexData);
         }
 
-        return $this->elasticIndex()->save($elasticEntity);
+        $elasticEntity = $this->_findElasticDocument($entity);
+        if (empty($elasticEntity)) {
+            return $this->elasticIndex()->newEntity($indexData);
+        }
+
+        return $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
+    }
+
+    public function saveIndexDocuments($entities) {
+        $documents = [];
+        foreach ($entities as $entity) {
+            $documents[] = $this->_newOrPatch($entity);
+        }
+
+        return $this->elasticIndex()->saveMany($documents);
+    }
+
+    /**
+     * Saves and updates a document in the index used by the table the behavior is attached to.
+     *
+     * @param \Cake\Datasource\EntityInterface
+     * @return void
+     */
+    public function saveIndexDocument(EntityInterface $entity)
+    {
+        return $this->elasticIndex()->save($this->_newOrPatch($entity));
     }
 
     /**
