@@ -141,11 +141,14 @@ class ElasticIndexShell extends Shell {
         $table = $this->_getTable($tableName);
 
         $query = $table->find();
-        if ($table->hasFinder('buildIndex')) {
-            $query->find('buildIndex');
+        if ($table->hasFinder('indexDataCount')) {
+            $query->find('indexDataCount');
         }
 
-        $total = $query->all()->count();
+        $total = $query
+            ->all()
+            ->count();
+
         $offset = $this->param('offset');
         $limit = $this->param('limit');
 
@@ -174,6 +177,20 @@ class ElasticIndexShell extends Shell {
         ]);
     }
 
+    protected function _getRecords($table, $offset, $limit) {
+        $query = $table->find();
+        if ($table->hasFinder('indexData')) {
+            $query->find('indexData');
+        }
+
+        return $query
+            ->offset($offset)
+            ->limit($limit)
+            ->orderDesc($table->aliasField($table->primaryKey()))
+            ->all()
+            ->toList();
+    }
+
     /**
      * Processes the records.
      *
@@ -184,32 +201,15 @@ class ElasticIndexShell extends Shell {
      */
     protected function _process($table, $offset, $limit)
     {
-        $query = $table->find();
-        if ($table->hasFinder('buildIndex')) {
-            $query->find('buildIndex');
-        }
-
-        $results = $query
-            ->offset($offset)
-            ->limit($limit)
-            ->orderDesc($table->aliasField($table->primaryKey()))
-            ->all();
+        $results = $this->_getRecords($table, $offset, $limit);
 
         if (empty($results)) {
             return;
         }
 
-        $bulk = $this->param('bulk');
-        if ($bulk === 'false') {
-            $bulk = false;
-        } else {
-            $bulk = (bool)$bulk;
-        }
-
-        if ($bulk) {
+        if ($this->_isBulk()) {
             try {
                 $table->saveIndexDocuments($results);
-                $offset = $offset + $limit;
                 $this->_counter = $this->_counter + $limit;
                 $stop = $this->param('stop');
 
@@ -237,6 +237,16 @@ class ElasticIndexShell extends Shell {
                 }
             }
         }
+    }
+
+    protected function _isBulk()
+    {
+        $bulk = $this->param('bulk');
+        if ($bulk === 'false') {
+            return false;
+        }
+
+         return (bool)$bulk;
     }
 
     /**

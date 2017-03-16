@@ -5,6 +5,7 @@ use ArrayObject;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\RulesChecker;
 use Elastica\Document as ElasticaDocument;
+use RuntimeException;
 
 trait SaveManyTrait {
 

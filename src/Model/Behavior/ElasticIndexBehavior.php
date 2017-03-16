@@ -133,12 +133,12 @@ class ElasticIndexBehavior extends Behavior {
 
     public function saveIndexDocuments($entities)
     {
-        $documents = [];
-        foreach ($entities as $entity) {
-            $documents[] = $this->_newOrPatch($entity);
-        }
+//        $documents = [];
+//        foreach ($entities as $entity) {
+//            $documents[] = $this->_newOrPatch($entity);
+//        }
 
-        return $this->elasticIndex()->saveMany($documents);
+        return $this->elasticIndex()->saveMany($entities);
     }
 
     /**
@@ -149,7 +149,7 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function saveIndexDocument(EntityInterface $entity)
     {
-        return $this->elasticIndex()->save($this->_newOrPatch($entity));
+        return $this->elasticIndex()->save($entity);
     }
 
     /**
@@ -192,8 +192,8 @@ class ElasticIndexBehavior extends Behavior {
         return $this->elasticIndex()
             ->find()
             ->where([
-                '_id' => (string)$entity->{$this->_table->primaryKey()}
+                '_id' => (string)$entity->get((string)$this->_table->primaryKey())
             ])
-            ->first();
+            ->firstOrFail();
     }
 }
