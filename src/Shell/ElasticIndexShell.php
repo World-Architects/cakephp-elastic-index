@@ -6,6 +6,7 @@ use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\ORM\TableRegistry;
+use Exception;
 
 class ElasticIndexShell extends Shell {
 
@@ -181,7 +182,7 @@ class ElasticIndexShell extends Shell {
      * @param int $limit
      * @return void
      */
-    protected function _process($table, $offset, $limit, $bulk = false)
+    protected function _process($table, $offset, $limit)
     {
         $query = $table->find();
         if ($table->hasFinder('buildIndex')) {
@@ -198,7 +199,14 @@ class ElasticIndexShell extends Shell {
             return;
         }
 
-        if ($bulk === true) {
+        $bulk = $this->param('bulk');
+        if ($bulk === 'false') {
+            $bulk = false;
+        } else {
+            $bulk = (bool)$bulk;
+        }
+
+        if ($bulk) {
             try {
                 $table->saveIndexDocuments($results);
                 $offset = $offset + $limit;
@@ -209,7 +217,7 @@ class ElasticIndexShell extends Shell {
                     $this->info(sprintf('Stopped after %d records.', $stop), 0);
                     exit(0);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->printException($e);
             }
         } else {
@@ -224,7 +232,7 @@ class ElasticIndexShell extends Shell {
                         $this->info(sprintf('Stopped after %d records.', $stop), 0);
                         exit(0);
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->printException($e);
                 }
             }
@@ -313,6 +321,10 @@ class ElasticIndexShell extends Shell {
             'short' => 'l',
             'help' => __d('elastic_index', 'Limit.'),
             'default' => 50
+        ])->addOption('bulk', [
+            'short' => 'b',
+            'help' => __d('elastic_index', 'Bulk saving'),
+            'default' => false
         ])->addOption('table', [
             'short' => 't',
             'help' => __d('elastic_index', 'The table you want to use.'),

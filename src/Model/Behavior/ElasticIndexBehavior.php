@@ -107,7 +107,8 @@ class ElasticIndexBehavior extends Behavior {
         }
     }
 
-    protected function _newOrPatch(EntityInterface $entity) {
+    protected function _newOrPatch(EntityInterface $entity)
+    {
         if (method_exists($this->_table, 'getIndexData')) {
             $indexData = $this->_table->getIndexData($entity);
         } else {
@@ -130,7 +131,8 @@ class ElasticIndexBehavior extends Behavior {
         return $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
     }
 
-    public function saveIndexDocuments($entities) {
+    public function saveIndexDocuments($entities)
+    {
         $documents = [];
         foreach ($entities as $entity) {
             $documents[] = $this->_newOrPatch($entity);

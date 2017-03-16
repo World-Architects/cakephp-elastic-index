@@ -20,7 +20,8 @@ trait SaveManyTrait {
      * @param array $options An array of options to be used for the event
      * @return bool
      */
-    public function saveMany($entities, $options = []) {
+    public function saveMany($entities, $options = [])
+    {
         $options += ['checkRules' => true];
         $options = new ArrayObject($options);
 
