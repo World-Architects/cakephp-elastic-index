@@ -142,6 +142,23 @@ class ElasticIndexShell extends Shell {
     }
 
     /**
+     * Gets the total amount of records the shell is going to process
+     *
+     * @param \Cake\ORM\Table $table
+     * @return int Count of records to process
+     */
+    protected function _getCount($table) {
+        $query = $table->find();
+        if ($table->hasFinder('indexDataCount')) {
+            $query->find('indexDataCount');
+        }
+
+        return $query
+            ->all()
+            ->count();
+    }
+
+    /**
      * The actual index building method that iterates over the table data.
      *
      * @param string $tableName
@@ -150,16 +167,7 @@ class ElasticIndexShell extends Shell {
     protected function _buildIndex($tableName)
     {
         $table = $this->_getTable($tableName);
-
-        $query = $table->find();
-        if ($table->hasFinder('indexDataCount')) {
-            $query->find('indexDataCount');
-        }
-
-        $total = $query
-            ->all()
-            ->count();
-
+        $total = $this->_getCount($table);
         $offset = $this->param('offset');
         $limit = $this->param('limit');
 
@@ -174,8 +182,6 @@ class ElasticIndexShell extends Shell {
         }
 
         $this->_setStartTime();
-
-        //$this->_getRecordIds($table, $offset, $limit);
 
         $this->helper('progress')->output([
             'total' => $total,
@@ -192,46 +198,6 @@ class ElasticIndexShell extends Shell {
         ]);
 
         $this->_showPassedTime();
-    }
-
-    protected function _getRecordIds($table) {
-        $stmt = ConnectionManager::get('default2')
-            ->newQuery()
-            ->select([
-                'id'
-            ])
-            ->orderDesc('id')
-            ->from('wa_profiles')
-            ->bufferResults(false)
-            ->execute();
-
-        $f = function () use ($stmt) {
-            while ($row = $stmt->fetch('assoc')) {
-                yield $row;
-            }
-        };
-
-        $limit = $this->param('limit');
-        $collection = (new Collection($f()))
-            ->chunk($limit)
-            ->each(function($chunck) use ($table) {
-
-                $query = $table->find();
-                if ($table->hasFinder('indexData')) {
-                    $query->find('indexData');
-                }
-
-                $ids = Hash::combine($chunck, '{n}.id', '{n}.id');
-
-                $results = $query
-                    ->where([
-                        'Profiles.id IN' => $ids
-                    ])
-                    ->all()
-                    ->toList();
-
-                $table->saveIndexDocuments($results);
-            });
     }
 
     /**

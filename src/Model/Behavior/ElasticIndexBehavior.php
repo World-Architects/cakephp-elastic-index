@@ -131,12 +131,21 @@ class ElasticIndexBehavior extends Behavior {
         return $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
     }
 
+    /**
+     * Saves multiple index documents
+     *
+     * @param array $entities An array containing entities, only entities
+     * @return bool
+     */
     public function saveIndexDocuments($entities)
     {
-//        $documents = [];
-//        foreach ($entities as $entity) {
-//            $documents[] = $this->_newOrPatch($entity);
-//        }
+        $index = $this->elasticIndex();
+        if (!method_exists($index, 'saveMany')) {
+            throw new \RuntimeException(sprintf(
+                '`%s` does not implement `saveMany()`',
+                get_class($index)
+            ));
+        }
 
         return $this->elasticIndex()->saveMany($entities);
     }
@@ -153,7 +162,10 @@ class ElasticIndexBehavior extends Behavior {
     }
 
     /**
-     * 
+     * Builds the document data and updates the document in the index
+     *
+     * @param int|string $id Record integer type id or UUID
+     * @return \Cake\Datasource\EntityInterface|bool
      */
     public function updateIndexDocument($id)
     {
@@ -196,6 +208,7 @@ class ElasticIndexBehavior extends Behavior {
         if (empty($elasticEntity)) {
             return;
         }
+
         $this->elasticIndex()->delete($elasticEntity);
     }
 
