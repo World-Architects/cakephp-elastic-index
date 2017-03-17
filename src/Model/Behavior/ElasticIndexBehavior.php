@@ -153,6 +153,24 @@ class ElasticIndexBehavior extends Behavior {
     }
 
     /**
+     * 
+     */
+    public function updateIndexDocument($id)
+    {
+        $query = $this->_table->find();
+        if ($this->_table->behaviors()->hasMethod('indexData')
+            || method_exists($this->_table, 'indexData')) {
+            $query->find('indexData');
+        }
+
+        $query->where([
+            $this->_table->getPrimaryKey() => $id
+        ]);
+
+        return $this->elasticIndex()->save($query->firstOrFail());
+    }
+
+    /**
      * After delete
      *
      * @param \Cake\Event\Event;

@@ -5,6 +5,7 @@ use Cake\Event\Event;
 use Cake\ORM\Behavior;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
+use RuntimeException;
 
 /**
  * Elastic Update Trigger Behavior
@@ -54,8 +55,10 @@ class ElasticUpdateTriggerBehavior extends Behavior {
 
         foreach ($models as $model => $field) {
             $model = TableRegistry::get($model);
-            if (!$model->behaviors()->hasMethod($method) || !method_exists($model, $method)) {
-                throw new \RuntimeException(sprintf(
+            if (!$model->behaviors()->hasMethod($method)
+                || !method_exists($model, $method))
+            {
+                throw new RuntimeException(sprintf(
                     '`%s` must implement a method `%s`',
                     get_class($model),
                     $method
@@ -70,7 +73,10 @@ class ElasticUpdateTriggerBehavior extends Behavior {
                 $id = $field($this->_table, $entity);
             }
             if (empty($id)) {
-                throw new \RuntimeException(sprintf('Could not update the ES index for `%s`', $model));
+                throw new RuntimeException(sprintf(
+                    'Could not update the ES index for `%s`',
+                    $model
+                ));
             }
 
             $model->updateIndexDocument($id);
