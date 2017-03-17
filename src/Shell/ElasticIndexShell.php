@@ -1,7 +1,6 @@
 <?php
 namespace Psa\ElasticIndex\Shell;
 
-use Cake\Chronos\Chronos;
 use Cake\Collection\Collection;
 use Cake\Console\Shell;
 use Cake\Core\Configure;
@@ -12,6 +11,8 @@ use Cake\Utility\Hash;
 use Exception;
 
 class ElasticIndexShell extends Shell {
+
+    use PassedTimeTrait;
 
     /**
      * Indexable tables
@@ -172,7 +173,7 @@ class ElasticIndexShell extends Shell {
             $this->out(sprintf('Going to process %d records.', $total));
         }
 
-        $this->_startTime = Chronos::now();
+        $this->_setStartTime();
 
         //$this->_getRecordIds($table, $offset, $limit);
 
@@ -190,28 +191,10 @@ class ElasticIndexShell extends Shell {
             }
         ]);
 
-        $this->_showEndTime();
-    }
-
-    protected function _showEndTime() {
-        $seconds = Chronos::now()->diffInSeconds($this->_startTime);
-        $minutes = Chronos::now()->diffInMinutes($this->_startTime);
-        if ($seconds > 60) {
-            $seconds = $seconds - ($minutes * 60);
-            $this->out($minutes . ' minutes and ' . $seconds . ' seconds');
-        } else {
-            $this->out($seconds . ' seconds');
-        }
+        $this->_showPassedTime();
     }
 
     protected function _getRecordIds($table) {
-        $query = $table->find();
-//        if ($table->hasFinder('indexIds')) {
-//            $query->find('indexIds');
-//        }
-
-        $field = (string)$table->getPrimaryKey();
-
         $stmt = ConnectionManager::get('default2')
             ->newQuery()
             ->select([
@@ -251,6 +234,14 @@ class ElasticIndexShell extends Shell {
             });
     }
 
+    /**
+     * Gets a chunk of records to process
+     *
+     * @param \Cake\ORM\Table $table
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
     protected function _getRecords($table, $offset, $limit) {
         $query = $table->find();
         if ($table->hasFinder('indexData')) {
@@ -281,46 +272,18 @@ class ElasticIndexShell extends Shell {
             return;
         }
 
-        if ($this->_isBulk()) {
-            try {
-                $table->saveIndexDocuments($results);
-                $this->_counter = $this->_counter + $limit;
-                $stop = $this->param('stop');
+        try {
+            $table->saveIndexDocuments($results);
+            $this->_counter = $this->_counter + $limit;
+            $stop = $this->param('stop');
 
-                if ($stop && $this->_counter >= $stop) {
-                    $this->info(sprintf('Stopped after %d records.', $stop), 0);
-                    exit(0);
-                }
-            } catch (Exception $e) {
-                $this->printException($e);
+            if ($stop && $this->_counter >= $stop) {
+                $this->info(sprintf('Stopped after %d records.', $stop), 0);
+                exit(0);
             }
-        } else {
-            foreach ($results as $result) {
-                try {
-                    $table->saveIndexDocument($result);
-                    $offset++;
-                    $this->_counter++;
-                    $stop = $this->param('stop');
-
-                    if ($stop && $this->_counter >= $stop) {
-                        $this->info(sprintf('Stopped after %d records.', $stop), 0);
-                        exit(0);
-                    }
-                } catch (Exception $e) {
-                    $this->printException($e);
-                }
-            }
+        } catch (Exception $e) {
+            $this->printException($e);
         }
-    }
-
-    protected function _isBulk()
-    {
-        $bulk = $this->param('bulk');
-        if ($bulk === 'false') {
-            return false;
-        }
-
-         return (bool)$bulk;
     }
 
     /**
