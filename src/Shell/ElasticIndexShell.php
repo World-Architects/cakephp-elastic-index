@@ -1,11 +1,14 @@
 <?php
 namespace Psa\ElasticIndex\Shell;
 
+use Cake\Chronos\Chronos;
+use Cake\Collection\Collection;
 use Cake\Console\Shell;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
 use Exception;
 
 class ElasticIndexShell extends Shell {
@@ -23,6 +26,13 @@ class ElasticIndexShell extends Shell {
      * @var int
      */
     protected $_counter = 0;
+
+    /**
+     * Start time of a process
+     *
+     * @var \DateTime|null
+     */
+    protected $_startTime = null;
 
     /**
      * {@inheritdoc}
@@ -162,6 +172,10 @@ class ElasticIndexShell extends Shell {
             $this->out(sprintf('Going to process %d records.', $total));
         }
 
+        $this->_startTime = Chronos::now();
+
+        //$this->_getRecordIds($table, $offset, $limit);
+
         $this->helper('progress')->output([
             'total' => $total,
             'callback' => function ($progress) use ($total, $table, $offset, $limit) {
@@ -175,6 +189,66 @@ class ElasticIndexShell extends Shell {
                 return;
             }
         ]);
+
+        $this->_showEndTime();
+    }
+
+    protected function _showEndTime() {
+        $seconds = Chronos::now()->diffInSeconds($this->_startTime);
+        $minutes = Chronos::now()->diffInMinutes($this->_startTime);
+        if ($seconds > 60) {
+            $seconds = $seconds - ($minutes * 60);
+            $this->out($minutes . ' minutes and ' . $seconds . ' seconds');
+        } else {
+            $this->out($seconds . ' seconds');
+        }
+    }
+
+    protected function _getRecordIds($table) {
+        $query = $table->find();
+//        if ($table->hasFinder('indexIds')) {
+//            $query->find('indexIds');
+//        }
+
+        $field = (string)$table->getPrimaryKey();
+
+        $stmt = ConnectionManager::get('default2')
+            ->newQuery()
+            ->select([
+                'id'
+            ])
+            ->orderDesc('id')
+            ->from('wa_profiles')
+            ->bufferResults(false)
+            ->execute();
+
+        $f = function () use ($stmt) {
+            while ($row = $stmt->fetch('assoc')) {
+                yield $row;
+            }
+        };
+
+        $limit = $this->param('limit');
+        $collection = (new Collection($f()))
+            ->chunk($limit)
+            ->each(function($chunck) use ($table) {
+
+                $query = $table->find();
+                if ($table->hasFinder('indexData')) {
+                    $query->find('indexData');
+                }
+
+                $ids = Hash::combine($chunck, '{n}.id', '{n}.id');
+
+                $results = $query
+                    ->where([
+                        'Profiles.id IN' => $ids
+                    ])
+                    ->all()
+                    ->toList();
+
+                $table->saveIndexDocuments($results);
+            });
     }
 
     protected function _getRecords($table, $offset, $limit) {
