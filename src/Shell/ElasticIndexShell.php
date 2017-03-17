@@ -151,6 +151,8 @@ class ElasticIndexShell extends Shell {
         $query = $table->find();
         if ($table->hasFinder('indexDataCount')) {
             $query->find('indexDataCount');
+        } elseif ($table->hasFinder('indexData')) {
+            $query->find('indexData');
         }
 
         return $query
