@@ -45,7 +45,11 @@ class ElasticIndexBehavior extends Behavior {
     {
         $this->_defaultConfig['type'] = Inflector::underscore($table->table());
         parent::__construct($table, $config);
-        $this->elasticIndex($this->getConfig('type'), $this->getConfig('connection'));
+        $this->getElasticIndex($this->getConfig('type'), $this->getConfig('connection'));
+    }
+
+    public function elasticIndex($type = null, $connection = null) {
+        return $this->getElasticIndex($type, $connection);
     }
 
     /**
@@ -55,7 +59,7 @@ class ElasticIndexBehavior extends Behavior {
      * @param string $connection
      * @return \Cake\ElasticSearch\Type;
      */
-    public function elasticIndex($type = null, $connection = null)
+    public function getElasticIndex($type = null, $connection = null)
     {
         if (!empty($type)) {
             if (!TypeRegistry::exists($this->getConfig('type'))) {
@@ -148,18 +152,18 @@ class ElasticIndexBehavior extends Behavior {
             $indexData = $indexData->toArray();
         }
 
-        return $this->elasticIndex()->newEntity($indexData);
+        return $this->getElasticIndex()->newEntity($indexData);
 
 //        if ($entity->isNew()) {
-//            return $this->elasticIndex()->newEntity($indexData);
+//            return $this->getElasticIndex()->newEntity($indexData);
 //        }
 //
 //        $elasticEntity = $this->_findElasticDocument($entity);
 //        if (empty($elasticEntity)) {
-//            return $this->elasticIndex()->newEntity($indexData);
+//            return $this->getElasticIndex()->newEntity($indexData);
 //        }
 //
-//        return $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
+//        return $this->getElasticIndex()->patchEntity($elasticEntity, $indexData);
     }
 
     /**
@@ -179,7 +183,7 @@ class ElasticIndexBehavior extends Behavior {
             $entities[$key] = $this->_toDocument($entity, $getIndexData);
         }
 
-        return $this->elasticIndex()->saveMany($entities);
+        return $this->getElasticIndex()->saveMany($entities);
     }
 
     /**
@@ -195,7 +199,7 @@ class ElasticIndexBehavior extends Behavior {
             ? (bool)$options['getIndexData']
             : false;
 
-        return $this->elasticIndex()->save($this->_toDocument($entity, $getIndexData));
+        return $this->getElasticIndex()->save($this->_toDocument($entity, $getIndexData));
     }
 
     /**
@@ -221,11 +225,12 @@ class ElasticIndexBehavior extends Behavior {
     public function deleteIndexDocument(EntityInterface $entity)
     {
         $elasticEntity = $this->_findElasticDocument($entity);
+        //var_dump($elasticEntity);
         if (empty($elasticEntity)) {
             return false;
         }
 
-        return $this->elasticIndex()->delete($elasticEntity);
+        return $this->getElasticIndex()->delete($elasticEntity);
     }
 
     /**
@@ -236,10 +241,11 @@ class ElasticIndexBehavior extends Behavior {
      */
     protected function _findElasticDocument($entity)
     {
-        return $this->elasticIndex()
+        //var_dump($entity->get((string)$this->_table->getPrimaryKey()));
+        return $this->getElasticIndex()
             ->find()
             ->where([
-                '_id' => (string)$entity->{$this->_table->primaryKey()}
+                'id' => $entity->get((string)$this->_table->getPrimaryKey())
             ])
             ->first();
     }

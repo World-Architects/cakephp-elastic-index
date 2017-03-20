@@ -1,6 +1,7 @@
 <?php
 namespace Psa\ElasticIndex\Test\TestCase\Model\Behavior;
 
+use Cake\ElasticSearch\Document;
 use Cake\ElasticSearch\Type;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\TestSuite\TestCase;
@@ -61,15 +62,17 @@ class ElasticIndexBehavior extends TestCase {
         ]);
 
         $this->Projects->save($entity);
-    }
 
-    public function testAfterSave()
-    {
+        $result = $this->Projects->getElasticIndex()->get($entity->get('id'));
 
-    }
-
-    public function testAfterDelete()
-    {
+        $this->assertInstanceOf(Document::class, $result);
+        $this->assertEquals($result->get('id'), $entity->get('id'));
+        $this->assertCount(2, $result->get('tasks'));
+        $this->assertEquals('Some Project', $result->get('title'));
+sleep(5);
+        $this->Projects->delete($entity);
+        $result = $this->Projects->getElasticIndex()->get($entity->get('id'));
+        //print_r($result);
 
     }
 }
