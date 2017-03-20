@@ -241,7 +241,9 @@ class ElasticIndexShell extends Shell {
         }
 
         try {
-            $table->saveIndexDocuments($results);
+            $table->saveIndexDocuments($results, [
+                'getIndexData' => false
+            ]);
             $this->_counter = $this->_counter + $limit;
             $stop = $this->param('stop');
 
