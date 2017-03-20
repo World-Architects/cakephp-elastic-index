@@ -113,16 +113,33 @@ class ElasticIndexBehavior extends Behavior {
     }
 
     /**
-     * Turns the data into an elastic document
+     * Turns the data into an elastic document and gets the data if required
+     *
+     * The 2nd argument is used for the following use cases:
+     *
+     * 1) When the shell of this plugin generates the index we don't want to
+     * call getIndexData() even in the case it exists because the shell is
+     * already using the 'indexData' finder if present to read the records
+     * in a batch. Calling `getIndexData()` for each row would result in a
+     * huge performance slowdown
+     *
+     * 2) When data inside the application gets updated, not using the shell,
+     * usually only a tiny amount of data changes. Also when associated data is
+     * updated we need to call `getIndexData()` to ensure all data is properly
+     * fetched and updated. The associated models will trigger the callback to
+     * build the data via `getIndexData()`.
      *
      * @param \Cake\Datasource\EntityInterface $entity
-     * @param bool $getIndexData
+     * @param bool $getIndexData To fetch the data from the table or not.
      * @return \Cake\ElasticSearch\Document
      */
     protected function _toDocument(EntityInterface $entity, $getIndexData = false)
     {
+        $id = $entity->get((string)$this->_table->getPrimaryKey());
         if ($getIndexData && method_exists($this->_table, 'getIndexData')) {
-            $indexData = $this->_table->getIndexData($entity);
+            $indexData = $this->_table->getIndexData($id);
+        } elseif ($getIndexData) {
+            $indexData = $this->_table->get($id);
         } else {
             $indexData = $entity;
         }
