@@ -285,12 +285,16 @@ class ElasticIndexShell extends Shell {
     public function deleteDocument()
     {
         $table = $this->_getTable();
-        if (isset($this->args[0])) {
+        if (!isset($this->args[0])) {
             $this->abort('No id passed');
         }
 
         $entity = $table->get($this->args[0]);
-        $table->removeIndexDocument($entity);
+        if ($table->deleteIndexDocument($entity)) {
+            $this->abort('Document deleted.', Shell::CODE_SUCCESS);
+        }
+
+        $this->abort('Document not found or could not delete it.', Shell::CODE_ERROR);
     }
 
     /**

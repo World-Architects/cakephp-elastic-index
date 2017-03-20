@@ -225,7 +225,7 @@ class ElasticIndexBehavior extends Behavior {
     public function deleteIndexDocument(EntityInterface $entity)
     {
         $elasticEntity = $this->_findElasticDocument($entity);
-        //var_dump($elasticEntity);
+
         if (empty($elasticEntity)) {
             return false;
         }
@@ -239,13 +239,13 @@ class ElasticIndexBehavior extends Behavior {
      * @param \Cake\ORM\EntityInterface
      * @return \Cake\ElasticSearch\Datasource\Document
      */
-    protected function _findElasticDocument($entity)
+    protected function _findElasticDocument(EntityInterface $entity)
     {
-        //var_dump($entity->get((string)$this->_table->getPrimaryKey()));
+        $id = $entity->get((string)$this->_table->getPrimaryKey());
         return $this->getElasticIndex()
             ->find()
             ->where([
-                'id' => $entity->get((string)$this->_table->getPrimaryKey())
+                '_id' => $id
             ])
             ->first();
     }
