@@ -2,6 +2,7 @@
 namespace Psa\ElasticIndex\Model\Behavior;
 
 use Cake\Datasource\ConnectionManager;
+use Cake\ElasticSearch\Document;
 use Cake\Event\Event;
 use Cake\ORM\Behavior;
 use Cake\ORM\Table;
@@ -110,9 +111,13 @@ class ElasticIndexBehavior extends Behavior {
         if (isset($options['autoIndex'])) {
             $autoIndex = (bool)$options['autoIndex'];
         }
-
+        if (!isset($options['getIndexData'])) {
+            $options['getIndexData'] = true;
+        }
         if ($autoIndex === true) {
-            $this->saveIndexDocument($entity);
+            $this->saveIndexDocument($entity, [
+                'getIndexData' => $options['getIndexData']
+            ]);
         }
     }
 
@@ -153,17 +158,6 @@ class ElasticIndexBehavior extends Behavior {
         }
 
         return $this->getElasticIndex()->newEntity($indexData);
-
-//        if ($entity->isNew()) {
-//            return $this->getElasticIndex()->newEntity($indexData);
-//        }
-//
-//        $elasticEntity = $this->_findElasticDocument($entity);
-//        if (empty($elasticEntity)) {
-//            return $this->getElasticIndex()->newEntity($indexData);
-//        }
-//
-//        return $this->getElasticIndex()->patchEntity($elasticEntity, $indexData);
     }
 
     /**
@@ -231,6 +225,25 @@ class ElasticIndexBehavior extends Behavior {
         }
 
         return $this->getElasticIndex()->delete($elasticEntity);
+    }
+
+    /**
+     * Gets an index document by the id of the original record
+     *
+     * @param int|\Cake\Datasource\EntityInterface $id
+     * @return \Cake\ElasticSearch\Document
+     */
+    public function getIndexDocument($id) {
+        if ($id instanceof EntityInterface) {
+            $id = $id->get((string)$this->_table->getPrimaryKey());
+        }
+
+        return $this->getElasticIndex()
+            ->find()
+            ->where([
+                '_id' => $id
+            ])
+            ->first();
     }
 
     /**
