@@ -112,7 +112,9 @@ class ElasticIndexBehavior extends Behavior {
         }
 
         if ($autoIndex === true) {
-            $this->saveIndexDocument($entity);
+            $this->saveIndexDocument($entity, [
+                'getIndexData' => true
+            ]);
         }
     }
 
@@ -137,33 +139,38 @@ class ElasticIndexBehavior extends Behavior {
      * @param bool $getIndexData To fetch the data from the table or not.
      * @return \Cake\ElasticSearch\Document
      */
-    protected function _toDocument(EntityInterface $entity, $getIndexData = false)
+    protected function _toDocument(EntityInterface $entity)
     {
-        $id = $entity->get((string)$this->_table->getPrimaryKey());
+        return $this->getElasticIndex()->newEntity($entity->toArray());
+    }
+
+    /**
+     * The 2nd argument is used for the following use cases:
+     *
+     * 1) When the shell of this plugin generates the index we don't want to
+     * call getIndexData() even in the case it exists because the shell is
+     * already using the 'indexData' finder if present to read the records
+     * in a batch. Calling `getIndexData()` for each row would result in a
+     * huge performance slowdown
+     *
+     * 2) When data inside the application gets updated, not using the shell,
+     * usually only a tiny amount of data changes. Also when associated data is
+     * updated we need to call `getIndexData()` to ensure all data is properly
+     * fetched and updated. The associated models will trigger the callback to
+     * build the data via `getIndexData()`.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @param bool $getIndexData To fetch the data from the table or not.
+     * @return bool|\Cake\ElasticSearch\Document
+     */
+    protected function _getIndexData(EntityInterface $entity, $getIndexData = false) {
         if ($getIndexData && method_exists($this->_table, 'getIndexData')) {
-            $indexData = $this->_table->getIndexData($id);
+            return $this->_table->getIndexData($entity);
         } elseif ($getIndexData) {
-            $indexData = $this->_table->get($id);
-        } else {
-            $indexData = $entity;
+            return $this->_table->get($entity->get((string)$this->_table->getPrimaryKey()));
         }
 
-        if ($indexData instanceof EntityInterface) {
-            $indexData = $indexData->toArray();
-        }
-
-        return $this->getElasticIndex()->newEntity($indexData);
-
-//        if ($entity->isNew()) {
-//            return $this->getElasticIndex()->newEntity($indexData);
-//        }
-//
-//        $elasticEntity = $this->_findElasticDocument($entity);
-//        if (empty($elasticEntity)) {
-//            return $this->getElasticIndex()->newEntity($indexData);
-//        }
-//
-//        return $this->getElasticIndex()->patchEntity($elasticEntity, $indexData);
+        return $entity;
     }
 
     /**
@@ -180,7 +187,10 @@ class ElasticIndexBehavior extends Behavior {
             : false;
 
         foreach ($entities as $key => $entity) {
-            $entities[$key] = $this->_toDocument($entity, $getIndexData);
+            $indexData = $this->_getIndexData($entity, $getIndexData);
+            if ($indexData) {
+                $entities[$key] = $this->_toDocument($indexData);
+            }
         }
 
         return $this->getElasticIndex()->saveMany($entities);
@@ -199,7 +209,12 @@ class ElasticIndexBehavior extends Behavior {
             ? (bool)$options['getIndexData']
             : false;
 
-        return $this->getElasticIndex()->save($this->_toDocument($entity, $getIndexData));
+        $indexData = $this->_getIndexData($entity, $getIndexData);
+        if ($indexData) {
+            return $this->getElasticIndex()->save($this->_toDocument($entity));
+        }
+
+        return false;
     }
 
     /**
