@@ -259,7 +259,7 @@ class ElasticIndexShell extends Shell {
     /**
      * Updates a single document in the index.
      *
-     * @eturn void
+     * @return void
      */
     public function updateDocument()
     {
@@ -283,6 +283,8 @@ class ElasticIndexShell extends Shell {
 
     /**
      * Deletes a single document in the index.
+     *
+     * @return void
      */
     public function deleteDocument()
     {
