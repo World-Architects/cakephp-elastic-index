@@ -211,7 +211,7 @@ class ElasticIndexBehavior extends Behavior {
 
         $indexData = $this->_getIndexData($entity, $getIndexData);
         if ($indexData) {
-            return $this->getElasticIndex()->save($this->_toDocument($entity));
+            return $this->getElasticIndex()->save($this->_toDocument($indexData));
         }
 
         return false;
