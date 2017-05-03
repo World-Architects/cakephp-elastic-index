@@ -258,6 +258,8 @@ class ElasticIndexShell extends Shell {
 
     /**
      * Updates a single document in the index.
+     *
+     * @eturn void
      */
     public function updateDocument()
     {
@@ -266,12 +268,12 @@ class ElasticIndexShell extends Shell {
             $this->abort('No id passed');
         }
 
+        $entity = $table->get($this->args[0]);
+
         if ($table->behaviors()->hasMethod('getIndexData')
-            || method_exists($this, 'getIndexData'))
-        {
-            $entity = $table->getIndexData($this->args[0]);
-        } else {
-            $entity = $table->get($this->args[0]);
+            || method_exists($table, 'getIndexData')
+        ) {
+            $entity = $table->getIndexData($entity);
         }
 
         if ($table->saveIndexDocument($entity)) {
