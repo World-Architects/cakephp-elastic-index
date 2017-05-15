@@ -1,13 +1,18 @@
 <?php
 namespace Psa\ElasticIndex\Shell;
 
+use Cake\Collection\Collection;
 use Cake\Console\Shell;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
+use Exception;
 
 class ElasticIndexShell extends Shell {
+
+    use PassedTimeTrait;
 
     /**
      * Indexable tables
@@ -22,6 +27,13 @@ class ElasticIndexShell extends Shell {
      * @var int
      */
     protected $_counter = 0;
+
+    /**
+     * Start time of a process
+     *
+     * @var \DateTime|null
+     */
+    protected $_startTime = null;
 
     /**
      * {@inheritdoc}
@@ -130,6 +142,25 @@ class ElasticIndexShell extends Shell {
     }
 
     /**
+     * Gets the total amount of records the shell is going to process
+     *
+     * @param \Cake\ORM\Table $table
+     * @return int Count of records to process
+     */
+    protected function _getCount($table) {
+        $query = $table->find();
+        if ($table->hasFinder('indexDataCount')) {
+            $query->find('indexDataCount');
+        } elseif ($table->hasFinder('indexData')) {
+            $query->find('indexData');
+        }
+
+        return $query
+            ->all()
+            ->count();
+    }
+
+    /**
      * The actual index building method that iterates over the table data.
      *
      * @param string $tableName
@@ -138,13 +169,7 @@ class ElasticIndexShell extends Shell {
     protected function _buildIndex($tableName)
     {
         $table = $this->_getTable($tableName);
-
-        $query = $table->find();
-        if ($table->hasFinder('buildIndex')) {
-            $query->find('buildIndex');
-        }
-
-        $total = $query->all()->count();
+        $total = $this->_getCount($table);
         $offset = $this->param('offset');
         $limit = $this->param('limit');
 
@@ -157,6 +182,8 @@ class ElasticIndexShell extends Shell {
         } else {
             $this->out(sprintf('Going to process %d records.', $total));
         }
+
+        $this->_setStartTime();
 
         $this->helper('progress')->output([
             'total' => $total,
@@ -171,6 +198,30 @@ class ElasticIndexShell extends Shell {
                 return;
             }
         ]);
+
+        $this->_showPassedTime();
+    }
+
+    /**
+     * Gets a chunk of records to process
+     *
+     * @param \Cake\ORM\Table $table
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    protected function _getRecords($table, $offset, $limit) {
+        $query = $table->find();
+        if ($table->hasFinder('indexData')) {
+            $query->find('indexData');
+        }
+
+        return $query
+            ->offset($offset)
+            ->limit($limit)
+            ->orderDesc($table->aliasField($table->primaryKey()))
+            ->all()
+            ->toList();
     }
 
     /**
@@ -183,40 +234,32 @@ class ElasticIndexShell extends Shell {
      */
     protected function _process($table, $offset, $limit)
     {
-        $query = $table->find();
-        if ($table->hasFinder('buildIndex')) {
-            $query->find('buildIndex');
-        }
-
-        $results = $query
-            ->offset($offset)
-            ->limit($limit)
-            ->orderDesc($table->aliasField($table->primaryKey()))
-            ->all();
+        $results = $this->_getRecords($table, $offset, $limit);
 
         if (empty($results)) {
             return;
         }
 
-        foreach ($results as $result) {
-            try {
-                $table->saveIndexDocument($result);
-                $offset++;
-                $this->_counter++;
-                $stop = $this->param('stop');
+        try {
+            $table->saveIndexDocuments($results, [
+                'getIndexData' => false
+            ]);
+            $this->_counter = $this->_counter + $limit;
+            $stop = $this->param('stop');
 
-                if ($stop && $this->_counter >= $stop) {
-                    $this->info(sprintf('Stopped after %d records.', $stop), 0);
-                    exit(0);
-                }
-            } catch (\Exception $e) {
-                $this->printException($e);
+            if ($stop && $this->_counter >= $stop) {
+                $this->info(sprintf('Stopped after %d records.', $stop), 0);
+                exit(0);
             }
+        } catch (Exception $e) {
+            $this->printException($e);
         }
     }
 
     /**
      * Updates a single document in the index.
+     *
+     * @return void
      */
     public function updateDocument()
     {
@@ -225,12 +268,12 @@ class ElasticIndexShell extends Shell {
             $this->abort('No id passed');
         }
 
+        $entity = $table->get($this->args[0]);
+
         if ($table->behaviors()->hasMethod('getIndexData')
-            || method_exists($this, 'getIndexData'))
-        {
-            $entity = $table->getIndexData($this->args[0]);
-        } else {
-            $entity = $table->get($this->args[0]);
+            || method_exists($table, 'getIndexData')
+        ) {
+            $entity = $table->getIndexData($entity);
         }
 
         if ($table->saveIndexDocument($entity)) {
@@ -240,16 +283,22 @@ class ElasticIndexShell extends Shell {
 
     /**
      * Deletes a single document in the index.
+     *
+     * @return void
      */
     public function deleteDocument()
     {
         $table = $this->_getTable();
-        if (isset($this->args[0])) {
+        if (!isset($this->args[0])) {
             $this->abort('No id passed');
         }
 
         $entity = $table->get($this->args[0]);
-        $table->removeIndexDocument($entity);
+        if ($table->deleteIndexDocument($entity)) {
+            $this->abort('Document deleted.', Shell::CODE_SUCCESS);
+        }
+
+        $this->abort('Document not found or could not delete it.', Shell::CODE_ERROR);
     }
 
     /**
@@ -297,6 +346,10 @@ class ElasticIndexShell extends Shell {
             'short' => 'l',
             'help' => __d('elastic_index', 'Limit.'),
             'default' => 50
+        ])->addOption('bulk', [
+            'short' => 'b',
+            'help' => __d('elastic_index', 'Bulk saving'),
+            'default' => false
         ])->addOption('table', [
             'short' => 't',
             'help' => __d('elastic_index', 'The table you want to use.'),

@@ -45,7 +45,11 @@ class ElasticIndexBehavior extends Behavior {
     {
         $this->_defaultConfig['type'] = Inflector::underscore($table->table());
         parent::__construct($table, $config);
-        $this->elasticIndex($this->getConfig('type'), $this->config('connection'));
+        $this->getElasticIndex($this->getConfig('type'), $this->getConfig('connection'));
+    }
+
+    public function elasticIndex($type = null, $connection = null) {
+        return $this->getElasticIndex($type, $connection);
     }
 
     /**
@@ -55,15 +59,15 @@ class ElasticIndexBehavior extends Behavior {
      * @param string $connection
      * @return \Cake\ElasticSearch\Type;
      */
-    public function elasticIndex($type = null, $connection = null)
+    public function getElasticIndex($type = null, $connection = null)
     {
         if (!empty($type)) {
-            if (empty($connection)) {
-                $connection = $this->getConfig('connection');
-            }
             if (!TypeRegistry::exists($this->getConfig('type'))) {
+                if (empty($connection)) {
+                    $connection = $this->getConfig('connection');
+                }
                 $this->_elasticType = TypeRegistry::get($this->getConfig('type'), [
-                    'connection' => ConnectionManager::get($this->getConfig('connection'))
+                    'connection' => ConnectionManager::get($connection)
                 ]);
             } else {
                 $this->_elasticType = TypeRegistry::get($this->getConfig('type'));
@@ -100,43 +104,117 @@ class ElasticIndexBehavior extends Behavior {
      * @param \Cake\Datasource\EntityInterface
      * @return void
      */
-    public function afterSave(Event $event, EntityInterface $entity)
+    public function afterSave(Event $event, EntityInterface $entity, $options = [])
     {
-        if ($this->getConfig('autoIndex') === true) {
-            $this->saveIndexDocument($entity);
+        $autoIndex = $this->getConfig('autoIndex');
+        if (isset($options['autoIndex'])) {
+            $autoIndex = (bool)$options['autoIndex'];
         }
+
+        if ($autoIndex === true) {
+            $this->saveIndexDocument($entity, [
+                'getIndexData' => true
+            ]);
+        }
+    }
+
+    /**
+     * Turns the data into an elastic document and gets the data if required
+     *
+     * The 2nd argument is used for the following use cases:
+     *
+     * 1) When the shell of this plugin generates the index we don't want to
+     * call getIndexData() even in the case it exists because the shell is
+     * already using the 'indexData' finder if present to read the records
+     * in a batch. Calling `getIndexData()` for each row would result in a
+     * huge performance slowdown
+     *
+     * 2) When data inside the application gets updated, not using the shell,
+     * usually only a tiny amount of data changes. Also when associated data is
+     * updated we need to call `getIndexData()` to ensure all data is properly
+     * fetched and updated. The associated models will trigger the callback to
+     * build the data via `getIndexData()`.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @param bool $getIndexData To fetch the data from the table or not.
+     * @return \Cake\ElasticSearch\Document
+     */
+    protected function _toDocument(EntityInterface $entity)
+    {
+        return $this->getElasticIndex()->newEntity($entity->toArray());
+    }
+
+    /**
+     * The 2nd argument is used for the following use cases:
+     *
+     * 1) When the shell of this plugin generates the index we don't want to
+     * call getIndexData() even in the case it exists because the shell is
+     * already using the 'indexData' finder if present to read the records
+     * in a batch. Calling `getIndexData()` for each row would result in a
+     * huge performance slowdown
+     *
+     * 2) When data inside the application gets updated, not using the shell,
+     * usually only a tiny amount of data changes. Also when associated data is
+     * updated we need to call `getIndexData()` to ensure all data is properly
+     * fetched and updated. The associated models will trigger the callback to
+     * build the data via `getIndexData()`.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @param bool $getIndexData To fetch the data from the table or not.
+     * @return bool|\Cake\ElasticSearch\Document
+     */
+    protected function _getIndexData(EntityInterface $entity, $getIndexData = false) {
+        if ($getIndexData && method_exists($this->_table, 'getIndexData')) {
+            return $this->_table->getIndexData($entity);
+        } elseif ($getIndexData) {
+            return $this->_table->get($entity->get((string)$this->_table->getPrimaryKey()));
+        }
+
+        return $entity;
+    }
+
+    /**
+     * Saves multiple documents in a bulk save
+     *
+     * @param array $entities
+     * @param array $options
+     * @return bool
+     */
+    public function saveIndexDocuments($entities, array $options = [])
+    {
+        $getIndexData = isset($options['getIndexData'])
+            ? (bool)$options['getIndexData']
+            : false;
+
+        foreach ($entities as $key => $entity) {
+            $indexData = $this->_getIndexData($entity, $getIndexData);
+            if ($indexData) {
+                $entities[$key] = $this->_toDocument($indexData);
+            }
+        }
+
+        return $this->getElasticIndex()->saveMany($entities);
     }
 
     /**
      * Saves and updates a document in the index used by the table the behavior is attached to.
      *
      * @param \Cake\Datasource\EntityInterface
-     * @return void
+     * @param array $options
+     * @return bool|array
      */
-    public function saveIndexDocument(EntityInterface $entity)
+    public function saveIndexDocument(EntityInterface $entity, array $options = [])
     {
-        if (method_exists($this->_table, 'getIndexData')) {
-            $indexData = $this->_table->getIndexData($entity);
-        } else {
-            $indexData = $entity;
+        $getIndexData = isset($options['getIndexData'])
+            ? (bool)$options['getIndexData']
+            : false;
+
+        $indexData = $this->_getIndexData($entity, $getIndexData);
+        if ($indexData) {
+            return $this->getElasticIndex()->save($this->_toDocument($indexData));
         }
 
-        if ($indexData instanceof EntityInterface) {
-            $indexData = $indexData->toArray();
-        }
-
-        if ($entity->isNew()) {
-            $elasticEntity = $this->elasticIndex()->newEntity($indexData);
-        } else {
-            $elasticEntity = $this->_findElasticDocument($entity);
-            if (empty($elasticEntity)) {
-                $elasticEntity = $this->elasticIndex()->newEntity($indexData);
-            } else {
-                $elasticEntity = $this->elasticIndex()->patchEntity($elasticEntity, $indexData);
-            }
-        }
-
-        return $this->elasticIndex()->save($elasticEntity);
+        return false;
     }
 
     /**
@@ -157,15 +235,17 @@ class ElasticIndexBehavior extends Behavior {
      * Deletes an index document.
      *
      * @param \Cake\Datasource\EntityInterface
-     * @return void
+     * @return bool
      */
     public function deleteIndexDocument(EntityInterface $entity)
     {
         $elasticEntity = $this->_findElasticDocument($entity);
+
         if (empty($elasticEntity)) {
-            return;
+            return false;
         }
-        $this->elasticIndex()->delete($elasticEntity);
+
+        return $this->getElasticIndex()->delete($elasticEntity);
     }
 
     /**
@@ -174,12 +254,13 @@ class ElasticIndexBehavior extends Behavior {
      * @param \Cake\ORM\EntityInterface
      * @return \Cake\ElasticSearch\Datasource\Document
      */
-    protected function _findElasticDocument($entity)
+    protected function _findElasticDocument(EntityInterface $entity)
     {
-        return $this->elasticIndex()
+        $id = $entity->get((string)$this->_table->getPrimaryKey());
+        return $this->getElasticIndex()
             ->find()
             ->where([
-                '_id' => (string)$entity->{$this->_table->primaryKey()}
+                '_id' => $id
             ])
             ->first();
     }
