@@ -1,0 +1,75 @@
+checks:
+    php:
+        code_rating: true
+        remove_extra_empty_lines: true
+        remove_php_closing_tag: true
+        remove_trailing_whitespace: true
+        custom_coding_standard:
+            git_repository: 'https://github.com/cakephp/cakephp-codesniffer.git'
+            git_version: 'a214ec6f7500ed391c4f8e6d50484bf5625605cc'
+            ruleset_path: 'CakePHP/ruleset.xml'
+
+tools:
+    php_code_coverage: true
+    php_mess_detector: true
+    sensiolabs_security_checker: true
+    php_code_sniffer: true
+    php_loc:
+        enabled: true
+        excluded_dirs: [vendor, tests, config, docs, bin, webroot]
+    php_cpd:
+        enabled: true
+        excluded_dirs: [vendor, tests, config, docs, bin, webroot]
+filter:
+    excluded_paths:
+        - bin/*
+        - vendor/*
+        - tests/*
+        - config/*
+        - docs/*
+        - webroot/*
+build:
+    environment:
+        mysql: 5.6
+        elasticsearch: 2
+        php:
+            version: "7.1.0"
+    project_setup:
+        before:
+            - sudo composer self-update
+            - composer --version
+            - composer global require hirak/prestissimo --no-plugins
+            - composer install --prefer-dist --no-interaction
+            - ./bin/cake server -H localhost -p 3000 > /dev/null 2>&1 &
+    tests:
+        override:
+            -
+               command: './bin/phpunit --coverage-clover=coverage.xml'
+               coverage:
+                   file: 'coverage.xml'
+                   format: 'php-clover'
+            -
+                command: 'sh ./scripts/upload-codecov.sh'
+                coverage:
+                    file: 'coverage.xml'
+                    format: 'php-clover'
+            -
+                command: './bin/phpcs ./phpcs.xml --standard=./vendor/fig-r/psr2r-sniffer/PSR2R/ruleset.xml ./src --report=checkstyle --report-file=cs-data'
+                analysis:
+                    file: 'cs-data'                 # The reporter filename
+                    format: 'php-cs-checkstyle'     # The supported format by Scrutinizer
+build_failure_conditions:                          # https://scrutinizer-ci.com/docs/configuration/build_status
+    #- 'patches.label("Doc Comments").exists'       # No doc comments patches allowed
+    - 'patches.label("Spacing").new.count > 1'     # More than 1 new spacing patch
+
+    - 'issues.label("coding-style").exists'        # No coding style issues allowed
+    - 'issues.label("coding-style").new.exists'    # No new coding style issues allowed
+
+    - 'issues.label("coding-style").new.count > 1' # More than 1 new coding style issues.
+    - 'issues.severity(>= MAJOR).new.exists'       # New issues of major or higher severity
+
+    - 'project.metric("scrutinizer.quality", < 9)' # Code Quality Rating drops below 9
+    #- 'project.metric("scrutinizer.test_coverage", < 0.85)' # Code Coverage drops below 85%
+
+    # Code Coverage decreased from previous inspection by more than 1%
+    - 'project.metric_change("scrutinizer.test_coverage", < -0.1)'
