@@ -54,7 +54,7 @@ build:
                     file: 'coverage.xml'
                     format: 'php-clover'
             -
-                command: './bin/phpcs ./phpcs.xml --standard=./vendor/fig-r/psr2r-sniffer/PSR2R/ruleset.xml ./src --report=checkstyle --report-file=cs-data'
+                command: './bin/phpcs ./phpcs.xml --standard=./vendor/cakephp/cakephp-codesniffer/CakePHP/ruleset.xml ./src --report=checkstyle --report-file=cs-data'
                 analysis:
                     file: 'cs-data'                 # The reporter filename
                     format: 'php-cs-checkstyle'     # The supported format by Scrutinizer
