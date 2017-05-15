@@ -25,7 +25,7 @@ class ElasticUpdateTriggerBehavior extends Behavior {
      * @var array
      */
     protected $_defaultConfig = [
-        'updateMethodName' => 'updateIndexDocument',
+        'updateMethodName' => 'saveIndexDocument',
         'models' => []
     ];
 
@@ -92,7 +92,7 @@ class ElasticUpdateTriggerBehavior extends Behavior {
         foreach ($models as $model => $field) {
             $model = TableRegistry::get($model);
             if (!$model->behaviors()->hasMethod($method)
-                || !method_exists($model, $method))
+                && !method_exists($model, $method))
             {
                 throw new RuntimeException(sprintf(
                     '`%s` must implement a method `%s`',
@@ -121,7 +121,11 @@ class ElasticUpdateTriggerBehavior extends Behavior {
                 ));
             }
 
-            $model->updateIndexDocument($id);
+            $entity = $model->newEntity([
+                (string)$model->getPrimaryKey() => $id
+            ]);
+
+            $model->{$method}($entity);
         }
     }
 }
