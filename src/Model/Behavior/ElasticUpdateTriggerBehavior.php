@@ -19,6 +19,11 @@ use RuntimeException;
  */
 class ElasticUpdateTriggerBehavior extends Behavior {
 
+    /**
+     * Default Config
+     *
+     * @var array
+     */
     protected $_defaultConfig = [
         'updateMethodName' => 'updateIndexDocument',
         'models' => []
@@ -26,14 +31,33 @@ class ElasticUpdateTriggerBehavior extends Behavior {
 
     protected $_enabled = true;
 
-    public function disableElasticTrigger() {
+    /**
+     * Disables the ES trigger
+     *
+     * @return void
+     */
+    public function disableElasticTrigger()
+    {
         $this->_enabled = false;
     }
 
-    public function enableElasticTrigger() {
+    /**
+     * Enables the ES trigger
+     *
+     * @return void
+     */
+    public function enableElasticTrigger()
+    {
         $this->_enabled = true;
     }
 
+    /**
+     * afterDelete callback
+     *
+     * @param \Cake\Event\Event $event Event
+     * @param \Cake\Datasource\EntityInterface $entity Entity
+     * @return void
+     */
     public function afterDelete(Event $event, EntityInterface $entity)
     {
         if ($this->_enabled) {
@@ -41,6 +65,13 @@ class ElasticUpdateTriggerBehavior extends Behavior {
         }
     }
 
+    /**
+     * afterSave callback
+     *
+     * @param \Cake\Event\Event $event Event
+     * @param \Cake\Datasource\EntityInterface $entity Entity
+     * @return void
+     */
     public function afterSave(Event $event, EntityInterface $entity)
     {
         if ($this->_enabled) {
@@ -48,6 +79,11 @@ class ElasticUpdateTriggerBehavior extends Behavior {
         }
     }
 
+    /**
+     * Triggers the ES update on related models
+     *
+     * @return void
+     */
     public function updateRelatedIndexDocuments($entity)
     {
         $models = (array)$this->getConfig('models');
@@ -69,9 +105,15 @@ class ElasticUpdateTriggerBehavior extends Behavior {
             if (is_string($field)) {
                 $id = $entity->get($field);
             }
+
             if (is_callable($field)) {
-                $id = $field($this->_table, $entity);
+                $id = $field($entity, $model, $this->_table);
             }
+
+            if ($id === false) {
+                return;
+            }
+
             if (empty($id)) {
                 throw new RuntimeException(sprintf(
                     'Could not update the ES index for `%s`',
@@ -82,5 +124,4 @@ class ElasticUpdateTriggerBehavior extends Behavior {
             $model->updateIndexDocument($id);
         }
     }
-
 }
