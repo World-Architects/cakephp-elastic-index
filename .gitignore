@@ -1,5 +1,5 @@
 # IDE
 .idea
 atlassian-ide-plugin.xml
-
+/bin
 /vendor
