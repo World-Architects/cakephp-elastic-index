@@ -210,6 +210,7 @@ class ElasticIndexBehavior extends Behavior {
             : false;
 
         $indexData = $this->_getIndexData($entity, $getIndexData);
+
         if ($indexData) {
             return $this->getElasticIndex()->save($this->_toDocument($indexData));
         }
@@ -240,7 +241,6 @@ class ElasticIndexBehavior extends Behavior {
     public function deleteIndexDocument(EntityInterface $entity)
     {
         $elasticEntity = $this->_findElasticDocument($entity);
-
         if (empty($elasticEntity)) {
             return false;
         }
@@ -257,6 +257,7 @@ class ElasticIndexBehavior extends Behavior {
     protected function _findElasticDocument(EntityInterface $entity)
     {
         $id = $entity->get((string)$this->_table->getPrimaryKey());
+
         return $this->getElasticIndex()
             ->find()
             ->where([

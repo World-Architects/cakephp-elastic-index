@@ -26,6 +26,9 @@ class ProjectsFixture extends BaseFixture {
         'body' => [
             'type' => 'string',
         ],
+        'tasks' => [
+            'type' => 'nested'
+        ],
         'created' => [
             'type' => 'date',
             'format' => 'yyyy-MM-dd HH:mm:ss'

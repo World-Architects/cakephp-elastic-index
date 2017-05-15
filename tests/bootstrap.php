@@ -1,25 +1,23 @@
 <?php
-require dirname(__DIR__) . '/vendor/autoload.php';
-
-define('APP', __DIR__);
-
-use Cake\Cache\Cache;
-use Cake\Core\Configure;
 use Cake\Core\Plugin;
-use Cake\Datasource\ConnectionManager;
-use Cake\ElasticSearch\TypeRegistry;
 
-Configure::write('App', [
-    'namespace' => 'App',
-    'paths' => [
-        'plugins' => [APP . DS . 'testapp' . DS . 'Plugin' . DS],
-    ]
-]);
+$findRoot = function ($root) {
+	do {
+		$lastRoot = $root;
+		$root = dirname($root);
+		if (is_dir($root . '/vendor/cakephp/cakephp')) {
+			return $root;
+		}
+	} while ($root !== $lastRoot);
+	throw new \Exception('Cannot find the root of the application, unable to run tests');
+};
 
-Cache::setConfig('_cake_core_', [
-    'className' => 'File',
-    'path' => sys_get_temp_dir(),
-]);
+$root = $findRoot(__FILE__);
+unset($findRoot);
+chdir($root);
+
+require $root . '/vendor/cakephp/cakephp/tests/bootstrap.php';
+require $root . '/vendor/autoload.php';
 
 if (!getenv('db_dsn')) {
     putenv('db_dsn=sqlite:///:memory:');
@@ -38,6 +36,10 @@ Plugin::load('Psa/ElasticIndex', [
     'bootstrap' => false
 ]);
 
+use Cake\Datasource\ConnectionManager;
+use Cake\ElasticSearch\TypeRegistry;
+
+ConnectionManager::drop('test');
 ConnectionManager::config('test', ['url' => getenv('db_dsn')]);
 ConnectionManager::config('test_elastic', ['url' => getenv('db_dsn_elastic')]);
 
