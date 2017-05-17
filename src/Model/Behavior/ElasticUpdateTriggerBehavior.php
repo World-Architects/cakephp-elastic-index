@@ -121,11 +121,17 @@ class ElasticUpdateTriggerBehavior extends Behavior {
                 ));
             }
 
-            $entity = $model->newEntity([
-                (string)$model->getPrimaryKey() => $id
-            ]);
+            $entity = $model->newEntity();
+            $model->patchEntity($entity,
+                [
+                    (string)$model->getPrimaryKey() => $id
+                ],
+                [
+                    'guard' => false
+                ]
+            );
 
-            $model->{$method}($entity);
+            $model->{$method}($entity, ['getIndexData' => true]);
         }
     }
 }
