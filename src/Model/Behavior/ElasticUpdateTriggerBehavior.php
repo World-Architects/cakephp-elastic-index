@@ -4,6 +4,7 @@ namespace Psa\ElasticIndex\Model\Behavior;
 use Cake\Event\Event;
 use Cake\ORM\Behavior;
 use Cake\Datasource\EntityInterface;
+use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use RuntimeException;
 
@@ -26,6 +27,7 @@ class ElasticUpdateTriggerBehavior extends Behavior {
      */
     protected $_defaultConfig = [
         'updateMethodName' => 'saveIndexDocument',
+        'deleteMethodName' => 'deleteIndexDocument',
         'models' => []
     ];
 
@@ -80,26 +82,33 @@ class ElasticUpdateTriggerBehavior extends Behavior {
     }
 
     /**
-     * Triggers the ES update on related models
+     * Checks that the callback table implements the ES callback method
      *
+     * @throws \RuntimeException
+     * @param \Cake\ORM\Table $table Table object.
+     * @param string $method Method name.
      * @return void
      */
-    public function updateRelatedIndexDocuments($entity)
+    protected function _modelCheck(Table $table, $method)
+    {
+        if (!$table->behaviors()->hasMethod($method)
+            && !method_exists($table, $method))
+        {
+            throw new RuntimeException(sprintf(
+                '`%s` must implement a method `%s`',
+                get_class($table),
+                $method
+            ));
+        }
+    }
+
+    protected function _triggerIndex($entity, $method)
     {
         $models = (array)$this->getConfig('models');
-        $method = (string)$this->getConfig('updateMethodName');
 
         foreach ($models as $model => $field) {
             $model = TableRegistry::get($model);
-            if (!$model->behaviors()->hasMethod($method)
-                && !method_exists($model, $method))
-            {
-                throw new RuntimeException(sprintf(
-                    '`%s` must implement a method `%s`',
-                    get_class($model),
-                    $method
-                ));
-            }
+            $this->_modelCheck($model, $method);
 
             $id = null;
             if (is_string($field)) {
@@ -133,5 +142,31 @@ class ElasticUpdateTriggerBehavior extends Behavior {
 
             $model->{$method}($entity, ['getIndexData' => true]);
         }
+    }
+
+    /**
+     * Triggers the ES delete on related models
+     *
+     * @return void
+     */
+    public function deleteRelatedIndexDocuments($entity)
+    {
+        $this->_triggerIndex(
+            $entity,
+            (string)$this->getConfig('deleteMethodName')
+        );
+    }
+
+    /**
+     * Triggers the ES update on related models
+     *
+     * @return void
+     */
+    public function updateRelatedIndexDocuments($entity)
+    {
+        $this->_triggerIndex(
+            $entity,
+            (string)$this->getConfig('updateMethodName')
+        );
     }
 }
