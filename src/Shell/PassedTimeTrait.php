@@ -12,26 +12,48 @@ trait PassedTimeTrait {
      */
     protected $_startTime = null;
 
+    /**
+     * Sets the start time
+     *
+     * @return void
+     */
     protected function _setStartTime()
     {
-        $this->_startTime = Chronos::now();
+        $this->_startTime = time();
     }
 
+    /**
+     * Calculates the times
+     *
+     * @param int $duration
+     * @return array
+     */
+    protected function _calcTime($duration)
+    {
+        return [
+            'days' => floor( $duration / (3600 * 24)),
+            'hours' => floor( ($duration / 3600 ) % 24),
+            'minutes' => floor( ( $duration / 60 ) % 60 ),
+            'seconds' => ( $duration % 60 )
+        ];
+    }
+
+    /**
+     * Prints the passed time since _startStartTime()
+     *
+     * @return  void
+     */
     protected function _showPassedTime()
     {
-        $seconds = Chronos::now()->diffInSeconds($this->_startTime);
-        $minutes = Chronos::now()->diffInMinutes($this->_startTime);
-        $hours = Chronos::now()->diffInHours($this->_startTime);
+        $time = $this->_calcTime(time() - (strtotime('-3 days') - 37125));
 
-        if ($hours > 0) {
-            $seconds = $seconds - ($hours * 60 * 60);
-        }
+        $output = [
+            __n('{0} Day', '{0} Days', $time['days'], [$time['days']]),
+            __n('{0} Hour', '{0} Hours', $time['hours'], [$time['hours']]),
+            __n('{0} Minute', '{0} Minutes', $time['minutes'], [$time['minutes']]),
+            __n('{0} Second', '{0} Seconds', $time['seconds'], [$time['seconds']])
+        ];
 
-        if ($seconds > 60) {
-            $seconds = $seconds - ($minutes * 60);
-            $this->out($minutes . ' minutes and ' . $seconds . ' seconds');
-        } else {
-            $this->out($seconds . ' seconds');
-        }
+        $this->out(implode(', ', $output));
     }
 }
