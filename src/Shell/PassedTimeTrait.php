@@ -59,6 +59,6 @@ trait PassedTimeTrait {
             break;
         }
 
-        $this->out(implode(', ', $output));
+        return implode(', ', $output);
     }
 }

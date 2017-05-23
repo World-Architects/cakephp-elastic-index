@@ -78,7 +78,7 @@ class ElasticIndexShell extends Shell {
 
         $this->startTimer();
         $this->build();
-        $this->showPassedTime();
+        $this->info(sprintf('Took ' . $this->showPassedTime()));
     }
 
     /**
