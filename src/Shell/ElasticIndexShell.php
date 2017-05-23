@@ -76,7 +76,9 @@ class ElasticIndexShell extends Shell {
         $selection = $this->in(__d('elastic_index', 'Choose the table you want to index:'));
         $this->params['table'] = $this->_indexableTables[$selection];
 
+        $this->startTimer();
         $this->build();
+        $this->showPassedTime();
     }
 
     /**

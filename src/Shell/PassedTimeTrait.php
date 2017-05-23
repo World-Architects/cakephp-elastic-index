@@ -15,7 +15,7 @@ trait PassedTimeTrait {
      *
      * @return void
      */
-    protected function _setStartTime()
+    public function startTimer()
     {
         $this->_startTime = time();
     }
@@ -26,7 +26,7 @@ trait PassedTimeTrait {
      * @param int $duration
      * @return array
      */
-    protected function _calcTime($duration)
+    public function calculatePassedTime($duration)
     {
         return [
             'days' => floor($duration / (3600 * 24)),
@@ -41,9 +41,9 @@ trait PassedTimeTrait {
      *
      * @return void
      */
-    protected function _showPassedTime()
+    public function showPassedTime()
     {
-        $time = $this->_calcTime(time() - (strtotime('-3 days') - 37125));
+        $time = $this->calculatePassedTime(time() - (strtotime('-3 days') - 37125));
 
         $output = [
             __n('{0} Day', '{0} Days', $time['days'], [$time['days']]),
