@@ -1,13 +1,11 @@
 <?php
 namespace Psa\ElasticIndex\Shell;
 
-use Cake\Collection\Collection;
 use Cake\Console\Shell;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\ORM\TableRegistry;
-use Cake\Utility\Hash;
 use Exception;
 
 class ElasticIndexShell extends Shell {

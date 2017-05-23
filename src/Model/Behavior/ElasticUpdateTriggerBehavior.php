@@ -102,6 +102,12 @@ class ElasticUpdateTriggerBehavior extends Behavior {
         }
     }
 
+    /**
+     * Triggers the index update or delete
+     *
+     * @param \Cake\Datasource\EntityInterface $entity Entity
+     * @param string $method Method to call
+     */
     protected function _triggerIndex($entity, $method)
     {
         $models = (array)$this->getConfig('models');
@@ -125,19 +131,15 @@ class ElasticUpdateTriggerBehavior extends Behavior {
 
             if (empty($id)) {
                 throw new RuntimeException(sprintf(
-                    'Could not update the ES index for `%s`',
+                    'Empty ID given, could not update the ES index for `%s`',
                     $model
                 ));
             }
 
             $entity = $model->newEntity();
             $model->patchEntity($entity,
-                [
-                    (string)$model->getPrimaryKey() => $id
-                ],
-                [
-                    'guard' => false
-                ]
+                [(string)$model->getPrimaryKey() => $id],
+                ['guard' => false]
             );
 
             $model->{$method}($entity, ['getIndexData' => true]);
