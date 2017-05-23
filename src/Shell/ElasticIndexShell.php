@@ -185,8 +185,6 @@ class ElasticIndexShell extends Shell {
             $this->out(sprintf('Going to process %d records.', $total));
         }
 
-        $this->_setStartTime();
-
         $this->helper('progress')->output([
             'total' => $total,
             'callback' => function ($progress) use ($total, $table, $offset, $limit) {
@@ -200,8 +198,6 @@ class ElasticIndexShell extends Shell {
                 return;
             }
         ]);
-
-        $this->_showPassedTime();
     }
 
     /**
