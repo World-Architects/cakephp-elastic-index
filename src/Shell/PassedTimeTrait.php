@@ -43,7 +43,7 @@ trait PassedTimeTrait {
      */
     public function showPassedTime()
     {
-        $time = $this->calculatePassedTime(time() - (strtotime('-3 days') - 37125));
+        $time = $this->calculatePassedTime(time() - $this->_startTime);
 
         $output = [
             __n('{0} Day', '{0} Days', $time['days'], [$time['days']]),
