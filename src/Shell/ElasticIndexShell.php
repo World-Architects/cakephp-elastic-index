@@ -439,11 +439,12 @@ class ElasticIndexShell extends Shell {
         if ($this->param('verbose') === true) {
             $this->out($e->getTraceAsString());
         }
-        $this->err('<error>Error:</error> L' . $e->getLine() . ' ' . $e->getFile());
+        $this->err('Error: L' . $e->getLine() . ' ' . $e->getFile());
         if ($quit === true) {
             $this->err($e->getMessage());
         }
-        $this->err('<error>Error: ' . $e->getMessage() . '</error>');
+        $this->err('Error: ' . $e->getMessage());
         $this->abort('');
     }
+
 }
