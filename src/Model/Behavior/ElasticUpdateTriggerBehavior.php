@@ -132,12 +132,12 @@ class ElasticUpdateTriggerBehavior extends Behavior {
             if (empty($id)) {
                 throw new RuntimeException(sprintf(
                     'Empty ID given, could not update the ES index for `%s`',
-                    $model
+                    get_class($model)
                 ));
             }
 
             $entity = $model->newEntity();
-            $model->patchEntity($entity,
+            $entity->set(
                 [(string)$model->getPrimaryKey() => $id],
                 ['guard' => false]
             );

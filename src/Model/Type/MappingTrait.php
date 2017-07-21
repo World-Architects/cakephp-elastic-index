@@ -37,6 +37,7 @@ trait MappingTrait {
         $connection = $this->connection();
         $index = $this->connection()->getConfigValue('index');;
         $elasticaIndex = $connection->getIndex($index);
+
         $this->_applyMapping(
             $elasticaIndex->getType($this->name()),
             $this->mapping()
