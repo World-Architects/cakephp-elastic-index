@@ -265,4 +265,5 @@ class ElasticIndexBehavior extends Behavior {
             ])
             ->first();
     }
+
 }
