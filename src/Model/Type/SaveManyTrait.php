@@ -37,10 +37,14 @@ trait SaveManyTrait {
                 ));
             }
 
-            $this->dispatchEvent('Model.beforeSave', [
+            $event = $this->dispatchEvent('Model.beforeSave', [
                 'entity' => $entity,
                 'options' => $options
             ]);
+
+            if ($event->isStopped()) {
+                return false;
+            }
 
             if ($entity->errors()) {
                 return false;

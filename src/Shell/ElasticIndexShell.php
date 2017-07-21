@@ -1,13 +1,11 @@
 <?php
 namespace Psa\ElasticIndex\Shell;
 
-use Cake\Collection\Collection;
 use Cake\Console\Shell;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\ORM\TableRegistry;
-use Cake\Utility\Hash;
 use Exception;
 
 class ElasticIndexShell extends Shell {
@@ -76,7 +74,9 @@ class ElasticIndexShell extends Shell {
         $selection = $this->in(__d('elastic_index', 'Choose the table you want to index:'));
         $this->params['table'] = $this->_indexableTables[$selection];
 
+        $this->startTimer();
         $this->build();
+        $this->info(sprintf('Took ' . $this->showPassedTime()));
     }
 
     /**
@@ -183,8 +183,6 @@ class ElasticIndexShell extends Shell {
             $this->out(sprintf('Going to process %d records.', $total));
         }
 
-        $this->_setStartTime();
-
         $this->helper('progress')->output([
             'total' => $total,
             'callback' => function ($progress) use ($total, $table, $offset, $limit) {
@@ -198,8 +196,6 @@ class ElasticIndexShell extends Shell {
                 return;
             }
         ]);
-
-        $this->_showPassedTime();
     }
 
     /**
@@ -443,11 +439,12 @@ class ElasticIndexShell extends Shell {
         if ($this->param('verbose') === true) {
             $this->out($e->getTraceAsString());
         }
-        $this->err('<error>Error:</error> L' . $e->getLine() . ' ' . $e->getFile());
+        $this->err('Error: L' . $e->getLine() . ' ' . $e->getFile());
         if ($quit === true) {
             $this->err($e->getMessage());
         }
-        $this->err('<error>Error: ' . $e->getMessage() . '</error>');
+        $this->err('Error: ' . $e->getMessage());
         $this->abort('');
     }
+
 }
