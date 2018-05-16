@@ -47,8 +47,8 @@ trait MappingTrait {
     /**
      * This method will execute the mapping on the current connection.
      *
-     * @param \Elastica\Type\Type $type
-     * @param array $mapping
+     * @param \Elastica\Type\Type $type Type
+     * @param array $mapping Mapping Schema
      * @return void
      */
     protected function _applyMapping(ElasticaType $type, array $mapping)

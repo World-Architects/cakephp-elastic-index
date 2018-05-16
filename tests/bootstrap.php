@@ -40,7 +40,8 @@ use Cake\Datasource\ConnectionManager;
 use Cake\ElasticSearch\TypeRegistry;
 
 ConnectionManager::drop('test');
-ConnectionManager::config('test', ['url' => getenv('db_dsn')]);
-ConnectionManager::config('test_elastic', ['url' => getenv('db_dsn_elastic')]);
+ConnectionManager::setConfig('test', ['url' => getenv('db_dsn')]);
+ConnectionManager::setConfig('test_elastic', ['url' => getenv('db_dsn_elastic')]);
 
 TypeRegistry::get('app_index', ['connection' => 'test_elastic']);
+

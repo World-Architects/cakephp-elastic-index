@@ -43,13 +43,9 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function __construct(Table $table, array $config = [])
     {
-        $this->_defaultConfig['type'] = Inflector::underscore($table->table());
+        $this->_defaultConfig['type'] = Inflector::underscore($table->getTable());
         parent::__construct($table, $config);
         $this->getElasticIndex($this->getConfig('type'), $this->getConfig('connection'));
-    }
-
-    public function elasticIndex($type = null, $connection = null) {
-        return $this->getElasticIndex($type, $connection);
     }
 
     /**
@@ -137,7 +133,7 @@ class ElasticIndexBehavior extends Behavior {
      *
      * @param \Cake\Datasource\EntityInterface $entity
      * @param bool $getIndexData To fetch the data from the table or not.
-     * @return \Cake\ElasticSearch\Document
+     * @return \Cake\Datasource\EntityInterface
      */
     protected function _toDocument(EntityInterface $entity)
     {
@@ -161,7 +157,7 @@ class ElasticIndexBehavior extends Behavior {
      *
      * @param \Cake\Datasource\EntityInterface $entity
      * @param bool $getIndexData To fetch the data from the table or not.
-     * @return bool|\Cake\ElasticSearch\Document
+     * @return bool|\Cake\Datasource\EntityInterface
      */
     protected function _getIndexData(EntityInterface $entity, $getIndexData = false) {
         if ($getIndexData && method_exists($this->_table, 'getIndexData')) {
@@ -251,8 +247,8 @@ class ElasticIndexBehavior extends Behavior {
     /**
      * Finds an elastic index document for an entity of the current table.
      *
-     * @param \Cake\ORM\EntityInterface
-     * @return \Cake\ElasticSearch\Datasource\Document
+     * @param \Cake\Datasource\EntityInterface
+     * @return \Cake\Datasource\EntityInterface
      */
     protected function _findElasticDocument(EntityInterface $entity)
     {
@@ -265,5 +261,4 @@ class ElasticIndexBehavior extends Behavior {
             ])
             ->first();
     }
-
 }

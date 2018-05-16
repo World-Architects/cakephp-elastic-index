@@ -8,6 +8,9 @@ use Cake\ElasticSearch\TypeRegistry;
 use Cake\ORM\TableRegistry;
 use Exception;
 
+/**
+ * ElasticIndexShell
+ */
 class ElasticIndexShell extends Shell {
 
     use PassedTimeTrait;
@@ -215,7 +218,7 @@ class ElasticIndexShell extends Shell {
         return $query
             ->offset($offset)
             ->limit($limit)
-            ->orderDesc($table->aliasField($table->primaryKey()))
+            ->orderDesc($table->aliasField($table->getPrimaryKey()))
             ->all()
             ->toList();
     }

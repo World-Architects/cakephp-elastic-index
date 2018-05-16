@@ -23,8 +23,8 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "cakephp/cakephp": "^3.4",
-        "cakephp/elastic-search": "*",
+        "cakephp/cakephp": "^3.6",
+        "cakephp/elastic-search": "~1.5",
         "cakephp/plugin-installer": "*"
     },
     "require-dev": {
