@@ -129,21 +129,33 @@ class ElasticUpdateTriggerBehavior extends Behavior {
                 return;
             }
 
-            if (empty($id)) {
+            if (empty($id) && !is_array($id)) {
                 throw new RuntimeException(sprintf(
                     'Empty ID given, could not update the ES index for `%s`',
                     get_class($model)
                 ));
             }
 
-            $entity = $model->newEntity();
-            $entity->set(
-                [(string)$model->getPrimaryKey() => $id],
-                ['guard' => false]
-            );
+            $ids = $id;
+            if (!is_array($ids)) {
+                $ids = [$id];
+            }
 
-            $model->{$method}($entity, ['getIndexData' => true]);
+            foreach ($ids as $id) {
+                $this->_applyTrigger($model, $method, $id);
+            }
         }
+    }
+
+    protected function _applyTrigger(Table $table, $method, $id)
+    {
+        $entity = $table->newEntity();
+        $entity->set(
+            [(string)$table->getPrimaryKey() => $id],
+            ['guard' => false]
+        );
+
+        $table->{$method}($entity, ['getIndexData' => true]);
     }
 
     /**
