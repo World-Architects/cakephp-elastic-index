@@ -1,6 +1,7 @@
 <?php
 namespace Psa\ElasticIndex\Model\Behavior;
 
+use App\Job\EsIndexUpdateJob;
 use Cake\Datasource\ConnectionManager;
 use Cake\Event\Event;
 use Cake\ORM\Behavior;
@@ -8,6 +9,7 @@ use Cake\ORM\Table;
 use Cake\Datasource\EntityInterface;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\Utility\Inflector;
+use Josegonzalez\CakeQueuesadilla\Queue\Queue;
 
 /**
  * ElasticIndexBehavior
@@ -25,7 +27,9 @@ class ElasticIndexBehavior extends Behavior {
     protected $_defaultConfig = [
         'type' => null,
         'connection' => 'elastic',
-        'autoIndex' => true
+        'autoIndex' => true,
+        'useQueue' => false,
+        'queueName' => 'esupdate'
     ];
 
     /**
@@ -178,6 +182,22 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function saveIndexDocuments($entities, array $options = [])
     {
+        $useQueue = !isset($options['useQueue'])
+            ? (bool)$this->getConfig('useQueue')
+            : $options['useQueue'];
+
+        if ($useQueue) {
+            $table = $this->getTable();
+            foreach ($entities as $entity) {
+                $this->pushToQueue(
+                    $entity->get($table->getPrimaryKey()),
+                    get_class($table)
+                );
+            }
+
+            return true;
+        }
+
         $getIndexData = isset($options['getIndexData'])
             ? (bool)$options['getIndexData']
             : false;
@@ -201,6 +221,20 @@ class ElasticIndexBehavior extends Behavior {
      */
     public function saveIndexDocument(EntityInterface $entity, array $options = [])
     {
+        $useQueue = !isset($options['useQueue'])
+            ? (bool)$this->getConfig('useQueue')
+            : $options['useQueue'];
+
+        if ($useQueue) {
+            $table = $this->getTable();
+            $this->pushToQueue(
+                $entity->get($table->getPrimaryKey()),
+                get_class($table)
+            );
+
+            return true;
+        }
+
         $getIndexData = isset($options['getIndexData'])
             ? (bool)$options['getIndexData']
             : false;
@@ -261,4 +295,19 @@ class ElasticIndexBehavior extends Behavior {
             ])
             ->first();
     }
+
+    public function pushToQueue($id, $model) {
+        Queue::push([EsIndexUpdateJob::class, 'updateIndex'], [
+            'id' => $id,
+            'message' => json_encode([
+                'model' => $model,
+                'id' => $id
+            ])
+        ], [
+                'attempts' => 5,
+                'queue' => $this->getConfig('queueName')
+            ]
+        );
+    }
+
 }
