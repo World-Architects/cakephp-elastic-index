@@ -8,9 +8,10 @@ use Cake\Log\LogTrait;
 use Exception;
 use josegonzalez\Queuesadilla\Job\Base;
 use Psr\Log\LogLevel;
+use RuntimeException;
 
 /**
- * NewsletterMailJob
+ * EsIndexUpdateJob
  */
 class EsIndexUpdateJob {
 
@@ -29,15 +30,22 @@ class EsIndexUpdateJob {
 
 		try {
 			if (isset($data['model']) || !isset($data['id'])) {
-				// throw error
+				throw new RuntimeException('Missing `model` and / or `id` in the job data!');
 			}
 
 			$model = $this->loadModel($data['model']);
 			if (!$model->hasBehavior('ElasticIndex')) {
-				// throw error
+				throw new RuntimeException(sprintf(
+					'Model `%s` is not using the ES Index Behavior',
+					$data['model']
+				));
 			}
 
-			$model->saveIndexDocument($model->get($data['id']), ['getIndexData' => true]);
+			// useQueue false is important here to avoid endless recursion!!!
+			$model->saveIndexDocument($model->get($data['id']), [
+				'getIndexData' => true,
+				'useQueue' => false
+			]);
 
 			$engine->acknowledge();
 
