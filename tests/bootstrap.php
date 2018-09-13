@@ -45,3 +45,5 @@ ConnectionManager::setConfig('test_elastic', ['url' => getenv('db_dsn_elastic')]
 
 TypeRegistry::get('app_index', ['connection' => 'test_elastic']);
 
+// Because the Cake ES plugin is still using deprecated methods from Cake < v3.6
+error_reporting(E_ALL & ~E_USER_DEPRECATED);

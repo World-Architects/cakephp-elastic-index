@@ -73,7 +73,7 @@ trait SaveManyTrait {
             $entities[$key]->id = $doc->getId();
             $entities[$key]->_version = $doc->getVersion();
             $entities[$key]->isNew(false);
-            $entities[$key]->source($this->name());
+            $entities[$key]->setSource($this->name());
             $entities[$key]->clean();
 
             $this->dispatchEvent('Model.afterSave', [

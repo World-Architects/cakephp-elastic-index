@@ -24,12 +24,12 @@ class EsIndexUpdateJob {
 	 * @param \josegonzalez\Queuesadilla\Job\Base $engine Engine
 	 * @return void
 	 */
-	public function updateEsIndex(Base $engine) {
+	public function updateIndex(Base $engine) {
 		$data = $engine->data();
 		$data = json_decode($data['message'], true);
 
 		try {
-			if (isset($data['model']) || !isset($data['id'])) {
+			if (!isset($data['model']) || !isset($data['id'])) {
 				throw new RuntimeException('Missing `model` and / or `id` in the job data!');
 			}
 
@@ -41,7 +41,7 @@ class EsIndexUpdateJob {
 				));
 			}
 
-			// useQueue false is important here to avoid endless recursion!!!
+			// useQueue false is important here to avoid endless recursion!
 			$model->saveIndexDocument($model->get($data['id']), [
 				'getIndexData' => true,
 				'useQueue' => false

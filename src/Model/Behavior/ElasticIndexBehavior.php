@@ -1,7 +1,6 @@
 <?php
 namespace Psa\ElasticIndex\Model\Behavior;
 
-use App\Job\EsIndexUpdateJob;
 use Cake\Datasource\ConnectionManager;
 use Cake\Event\Event;
 use Cake\ORM\Behavior;
@@ -10,6 +9,7 @@ use Cake\Datasource\EntityInterface;
 use Cake\ElasticSearch\TypeRegistry;
 use Cake\Utility\Inflector;
 use Josegonzalez\CakeQueuesadilla\Queue\Queue;
+use Psa\ElasticIndex\Job\EsIndexUpdateJob;
 
 /**
  * ElasticIndexBehavior
@@ -229,7 +229,7 @@ class ElasticIndexBehavior extends Behavior {
             $table = $this->getTable();
             $this->pushToQueue(
                 $entity->get($table->getPrimaryKey()),
-                get_class($table)
+                $table->getAlias()
             );
 
             return true;
@@ -296,7 +296,14 @@ class ElasticIndexBehavior extends Behavior {
             ->first();
     }
 
-    public function pushToQueue($id, $model) {
+    /**
+     * Pushes a job to the queue system
+     *
+     * @param int|string $id Id
+     * @param string $model Model
+     * @return void
+     */
+    public function pushToQueue($id, string $model): void {
         Queue::push([EsIndexUpdateJob::class, 'updateIndex'], [
             'id' => $id,
             'message' => json_encode([
