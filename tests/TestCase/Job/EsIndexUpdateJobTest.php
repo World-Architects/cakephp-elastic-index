@@ -17,7 +17,8 @@ class EsIndexUpdateJobTest extends TestCase
      * @var array
      */
     public $fixtures = [
-        'plugin.Psa/ElasticIndex.Projects'
+        'plugin.Psa/ElasticIndex.Projects',
+        'plugin.Psa/ElasticIndex.Tasks'
     ];
 
     /**
@@ -98,6 +99,7 @@ class EsIndexUpdateJobTest extends TestCase
             ->willReturn([
                 'message' => json_encode([
                     'model' => 'Articles',
+                    'alias' => 'Articles',
                     'id' => 1
                 ])
             ]);
@@ -128,7 +130,8 @@ class EsIndexUpdateJobTest extends TestCase
             ->method('data')
             ->willReturn([
                 'message' => json_encode([
-                    'model' => 'Projects',
+                    'model' => '\TestApp\Model\Table\ProjectsTable',
+                    'alias' => 'Projects',
                     'id' => '8176e72b-11f8-48c6-90ca-5f3cae439aca'
                 ])
             ]);
