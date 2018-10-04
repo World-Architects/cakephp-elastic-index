@@ -191,7 +191,8 @@ class ElasticIndexBehavior extends Behavior {
             foreach ($entities as $entity) {
                 $this->pushToQueue(
                     $entity->get($table->getPrimaryKey()),
-                    get_class($table)
+                    get_class($table),
+                    $table->getAlias()
                 );
             }
 
@@ -229,6 +230,7 @@ class ElasticIndexBehavior extends Behavior {
             $table = $this->getTable();
             $this->pushToQueue(
                 $entity->get($table->getPrimaryKey()),
+                get_class($table),
                 $table->getAlias()
             );
 
@@ -301,13 +303,15 @@ class ElasticIndexBehavior extends Behavior {
      *
      * @param int|string $id Id
      * @param string $model Model
+     * @param string $alias Model alias
      * @return void
      */
-    public function pushToQueue($id, string $model): void {
+    public function pushToQueue($id, string $model, string $alias): void {
         Queue::push([EsIndexUpdateJob::class, 'updateIndex'], [
             'id' => $id,
             'message' => json_encode([
                 'model' => $model,
+                'alias' => $alias,
                 'id' => $id
             ])
         ], [

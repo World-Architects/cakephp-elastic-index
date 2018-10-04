@@ -13,48 +13,53 @@ use RuntimeException;
 /**
  * EsIndexUpdateJob
  */
-class EsIndexUpdateJob {
+class EsIndexUpdateJob
+{
 
-	use LogTrait;
-	use ModelAwareTrait;
+    use LogTrait;
+    use ModelAwareTrait;
 
-	/**
-	 * Updates the ES index for a given model and record
-	 *
-	 * @param \josegonzalez\Queuesadilla\Job\Base $engine Engine
-	 * @return void
-	 */
-	public function updateIndex(Base $engine) {
-		$data = $engine->data();
-		$data = json_decode($data['message'], true);
+    /**
+     * Updates the ES index for a given model and record
+     *
+     * @param \josegonzalez\Queuesadilla\Job\Base $engine Engine
+     * @return void
+     */
+    public function updateIndex(Base $engine)
+    {
+        $data = $engine->data();
+        $data = json_decode($data['message'], true);
 
-		try {
-			if (!isset($data['model']) || !isset($data['id'])) {
-				throw new RuntimeException('Missing `model` and / or `id` in the job data!');
-			}
+        try {
+            if (!isset($data['model']) || !isset($data['id'])) {
+                throw new RuntimeException('Missing `model` and / or `id` in the job data!');
+            }
 
-			$model = $this->loadModel($data['model']);
-			if (!$model->hasBehavior('ElasticIndex')) {
-				throw new RuntimeException(sprintf(
-					'Model `%s` is not using the ES Index Behavior',
-					$data['model']
-				));
-			}
+            // The model can be the FQCN, which results in a wonky alias and Cake got problems
+            $model = $this->loadModel($data['model']);
+            $model->setAlias($data['alias']);
 
-			// useQueue false is important here to avoid endless recursion!
-			$model->saveIndexDocument($model->get($data['id']), [
-				'getIndexData' => true,
-				'useQueue' => false
-			]);
+            if (!$model->hasBehavior('ElasticIndex')) {
+                throw new RuntimeException(sprintf(
+                    'Model `%s` is not using the ES Index Behavior',
+                    $data['model']
+                ));
+            }
 
-			$engine->acknowledge();
+            // useQueue false is important here to avoid endless recursion!
+            $model->saveIndexDocument($model->get($data['id']), [
+                'getIndexData' => true,
+                'useQueue' => false
+            ]);
 
-			return;
-		} catch (Exception $e) {
-			$this->log($e->getMessage(), LogLevel::ERROR);
-		}
+            $engine->acknowledge();
 
-		$engine->reject();
-	}
+            return;
+        } catch (Exception $e) {
+            throw $e;
+            $this->log($e->getMessage(), LogLevel::ERROR);
+        }
 
+        $engine->reject();
+    }
 }
