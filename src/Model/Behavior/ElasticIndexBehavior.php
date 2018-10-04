@@ -303,6 +303,7 @@ class ElasticIndexBehavior extends Behavior {
      *
      * @param int|string $id Id
      * @param string $model Model
+     * @param string $alias Model alias
      * @return void
      */
     public function pushToQueue($id, string $model, string $alias): void {
