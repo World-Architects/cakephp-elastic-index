@@ -29,7 +29,8 @@ class ElasticIndexBehavior extends Behavior {
         'connection' => 'elastic',
         'autoIndex' => true,
         'useQueue' => false,
-        'queueName' => 'esupdate'
+        'queueName' => 'esupdate',
+        'queueJobClass' => EsIndexUpdateJob::class
     ];
 
     /**
@@ -231,7 +232,8 @@ class ElasticIndexBehavior extends Behavior {
             $this->pushToQueue(
                 $entity->get($table->getPrimaryKey()),
                 get_class($table),
-                $table->getAlias()
+                $table->getAlias(),
+                'updateIndex'
             );
 
             return true;
@@ -270,11 +272,27 @@ class ElasticIndexBehavior extends Behavior {
      * @param \Cake\Datasource\EntityInterface
      * @return bool
      */
-    public function deleteIndexDocument(EntityInterface $entity)
+    public function deleteIndexDocument(EntityInterface $entity, $options = [])
     {
         $elasticEntity = $this->_findElasticDocument($entity);
         if (empty($elasticEntity)) {
             return false;
+        }
+
+        $useQueue = !isset($options['useQueue'])
+            ? (bool)$this->getConfig('useQueue')
+            : $options['useQueue'];
+
+        if ($useQueue) {
+            $table = $this->getTable();
+            $this->pushToQueue(
+                $entity->get((string)$table->getPrimaryKey()),
+                get_class($table),
+                $table->getAlias(),
+                'deleteFromIndex'
+            );
+
+            return;
         }
 
         return $this->getElasticIndex()->delete($elasticEntity);
@@ -304,10 +322,11 @@ class ElasticIndexBehavior extends Behavior {
      * @param int|string $id Id
      * @param string $model Model
      * @param string $alias Model alias
+     * @param string $task Method name on the job to execute
      * @return void
      */
-    public function pushToQueue($id, string $model, string $alias): void {
-        Queue::push([EsIndexUpdateJob::class, 'updateIndex'], [
+    public function pushToQueue($id, string $model, string $alias, string $task = 'updateIndex'): void {
+        Queue::push([$this->getConfig('queueJobClass'), $task], [
             'id' => $id,
             'message' => json_encode([
                 'model' => $model,
