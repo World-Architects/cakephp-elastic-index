@@ -5,6 +5,7 @@ namespace Psa\ElasticIndex\Job;
 
 use Cake\Datasource\ModelAwareTrait;
 use Cake\Log\LogTrait;
+use Cake\ORM\Entity;
 use Exception;
 use josegonzalez\Queuesadilla\Job\Base;
 use Psr\Log\LogLevel;
@@ -77,8 +78,13 @@ class EsIndexUpdateJob
             $model->setAlias($data['alias']);
             $this->_checkForBehavior($model);
 
+            // This has to be a new entity because the SQL record might be already gone at this point in time
+            $entity = new Entity([
+                (string)$model->getPrimarykey() => $data['id']
+            ]);
+
             // useQueue false is important here to avoid endless recursion!
-            $model->deleteIndexDocument($model->get($data['id']), [
+            $model->deleteIndexDocument($entity, [
                 'useQueue' => false
             ]);
 

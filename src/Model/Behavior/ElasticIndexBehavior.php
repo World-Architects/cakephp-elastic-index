@@ -30,7 +30,13 @@ class ElasticIndexBehavior extends Behavior {
         'autoIndex' => true,
         'useQueue' => false,
         'queueName' => 'esupdate',
-        'queueJobClass' => EsIndexUpdateJob::class
+        'queueJobClass' => EsIndexUpdateJob::class,
+        'queueJobConfig' => [
+            'attempts' => 5,
+            'queue' => null, // Is filled in the constructor if empty for legacy reasons
+            'delay' => null,
+            'attempts_delay' => 60
+        ]
     ];
 
     /**
@@ -51,6 +57,10 @@ class ElasticIndexBehavior extends Behavior {
         $this->_defaultConfig['type'] = Inflector::underscore($table->getTable());
         parent::__construct($table, $config);
         $this->getElasticIndex($this->getConfig('type'), $this->getConfig('connection'));
+
+        if ($this->getConfig('queueJobConfig.queue') === null) {
+            $this->setConfig('queueJobConfig.queue', $this->getConfig('queueName'));
+        }
     }
 
     /**
@@ -275,6 +285,7 @@ class ElasticIndexBehavior extends Behavior {
     public function deleteIndexDocument(EntityInterface $entity, $options = [])
     {
         $elasticEntity = $this->_findElasticDocument($entity);
+
         if (empty($elasticEntity)) {
             return false;
         }
@@ -302,7 +313,7 @@ class ElasticIndexBehavior extends Behavior {
      * Finds an elastic index document for an entity of the current table.
      *
      * @param \Cake\Datasource\EntityInterface
-     * @return \Cake\Datasource\EntityInterface
+     * @return \Cake\Datasource\EntityInterface|null
      */
     protected function _findElasticDocument(EntityInterface $entity)
     {
@@ -326,17 +337,16 @@ class ElasticIndexBehavior extends Behavior {
      * @return void
      */
     public function pushToQueue($id, string $model, string $alias, string $task = 'updateIndex'): void {
-        Queue::push([$this->getConfig('queueJobClass'), $task], [
-            'id' => $id,
-            'message' => json_encode([
-                'model' => $model,
-                'alias' => $alias,
-                'id' => $id
-            ])
-        ], [
-                'attempts' => 5,
-                'queue' => $this->getConfig('queueName')
-            ]
+        Queue::push([$this->getConfig('queueJobClass'), $task],
+            [
+                'id' => $id,
+                'message' => json_encode([
+                    'model' => $model,
+                    'alias' => $alias,
+                    'id' => $id
+                ])
+            ],
+            $this->getConfig('queueJobConfig')
         );
     }
 
