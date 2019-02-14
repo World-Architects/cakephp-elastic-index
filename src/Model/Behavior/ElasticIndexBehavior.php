@@ -303,7 +303,7 @@ class ElasticIndexBehavior extends Behavior {
                 'deleteFromIndex'
             );
 
-            return;
+            return true;
         }
 
         return $this->getElasticIndex()->delete($elasticEntity);
